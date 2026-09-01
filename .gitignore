@@ -1,0 +1,38 @@
+# ---------- .NET ----------
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.db
+*.db-shm
+*.db-wal
+appsettings.*.local.json
+
+# ---------- Node / React ----------
+node_modules/
+dist/
+build/
+.vite/
+*.local
+coverage/
+
+# ---------- Expo / React Native ----------
+.expo/
+.expo-shared/
+web-build/
+*.orig.*
+
+# ---------- Env & secrets ----------
+.env
+.env.*
+!.env.example
+
+# ---------- Logs ----------
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# ---------- OS ----------
+.DS_Store
+Thumbs.db

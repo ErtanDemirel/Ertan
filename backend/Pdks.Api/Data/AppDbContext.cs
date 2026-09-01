@@ -1,0 +1,172 @@
+using Microsoft.EntityFrameworkCore;
+using Pdks.Api.Entities;
+
+namespace Pdks.Api.Data;
+
+public class AppDbContext : DbContext
+{
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+
+    public DbSet<User> Users => Set<User>();
+    public DbSet<Personnel> Personnel => Set<Personnel>();
+    public DbSet<ServiceRoute> ServiceRoutes => Set<ServiceRoute>();
+    public DbSet<Shift> Shifts => Set<Shift>();
+    public DbSet<ShiftAssignment> ShiftAssignments => Set<ShiftAssignment>();
+    public DbSet<LeaveType> LeaveTypes => Set<LeaveType>();
+    public DbSet<LeaveBalance> LeaveBalances => Set<LeaveBalance>();
+    public DbSet<LeaveRequest> LeaveRequests => Set<LeaveRequest>();
+    public DbSet<Announcement> Announcements => Set<Announcement>();
+    public DbSet<AnnouncementRead> AnnouncementReads => Set<AnnouncementRead>();
+    public DbSet<MealMenu> MealMenus => Set<MealMenu>();
+    public DbSet<WorkLocation> WorkLocations => Set<WorkLocation>();
+    public DbSet<Attendance> Attendances => Set<Attendance>();
+    public DbSet<PasswordResetCode> PasswordResetCodes => Set<PasswordResetCode>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
+    protected override void OnModelCreating(ModelBuilder b)
+    {
+        base.OnModelCreating(b);
+
+        // ---- User ----
+        b.Entity<User>(e =>
+        {
+            e.HasIndex(x => x.Username).IsUnique();
+            e.HasOne(x => x.Personnel)
+                .WithMany()
+                .HasForeignKey(x => x.PersonnelId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ---- Personnel ----
+        b.Entity<Personnel>(e =>
+        {
+            e.HasIndex(x => x.SicilNo).IsUnique();
+            e.Ignore(x => x.FullName);
+
+            e.HasOne(x => x.Manager)
+                .WithMany(x => x.Subordinates)
+                .HasForeignKey(x => x.ManagerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne(x => x.ServiceRoute)
+                .WithMany(x => x.Personnel)
+                .HasForeignKey(x => x.ServiceRouteId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            e.HasOne(x => x.Shift)
+                .WithMany(x => x.Personnel)
+                .HasForeignKey(x => x.ShiftId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ---- ShiftAssignment ----
+        b.Entity<ShiftAssignment>(e =>
+        {
+            e.HasIndex(x => new { x.PersonnelId, x.Date });
+            e.HasOne(x => x.Personnel)
+                .WithMany(x => x.ShiftAssignments)
+                .HasForeignKey(x => x.PersonnelId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Shift)
+                .WithMany(x => x.Assignments)
+                .HasForeignKey(x => x.ShiftId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ---- LeaveBalance ----
+        b.Entity<LeaveBalance>(e =>
+        {
+            e.Ignore(x => x.RemainingDays);
+            e.HasIndex(x => new { x.PersonnelId, x.Year }).IsUnique();
+            e.Property(x => x.EntitledDays).HasPrecision(6, 2);
+            e.Property(x => x.UsedDays).HasPrecision(6, 2);
+            e.Property(x => x.PendingDays).HasPrecision(6, 2);
+            e.HasOne(x => x.Personnel)
+                .WithMany(x => x.LeaveBalances)
+                .HasForeignKey(x => x.PersonnelId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ---- LeaveRequest ----
+        b.Entity<LeaveRequest>(e =>
+        {
+            e.Property(x => x.TotalDays).HasPrecision(6, 2);
+            e.HasOne(x => x.Personnel)
+                .WithMany(x => x.LeaveRequests)
+                .HasForeignKey(x => x.PersonnelId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.LeaveType)
+                .WithMany(x => x.Requests)
+                .HasForeignKey(x => x.LeaveTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Approver)
+                .WithMany()
+                .HasForeignKey(x => x.ApproverId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ---- Announcement ----
+        b.Entity<Announcement>(e =>
+        {
+            e.HasOne(x => x.PublishedBy)
+                .WithMany()
+                .HasForeignKey(x => x.PublishedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<AnnouncementRead>(e =>
+        {
+            e.HasIndex(x => new { x.AnnouncementId, x.UserId }).IsUnique();
+            e.HasOne(x => x.Announcement)
+                .WithMany(x => x.Reads)
+                .HasForeignKey(x => x.AnnouncementId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ---- MealMenu ----
+        b.Entity<MealMenu>(e =>
+        {
+            e.HasIndex(x => x.Date).IsUnique();
+            e.HasOne(x => x.CreatedBy)
+                .WithMany()
+                .HasForeignKey(x => x.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ---- Attendance ----
+        b.Entity<Attendance>(e =>
+        {
+            e.HasIndex(x => new { x.PersonnelId, x.Timestamp });
+            e.HasOne(x => x.Personnel)
+                .WithMany(x => x.Attendances)
+                .HasForeignKey(x => x.PersonnelId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.WorkLocation)
+                .WithMany(x => x.Attendances)
+                .HasForeignKey(x => x.WorkLocationId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ---- Security ----
+        b.Entity<PasswordResetCode>(e =>
+        {
+            e.HasOne(x => x.User)
+                .WithMany(x => x.ResetCodes)
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<RefreshToken>(e =>
+        {
+            e.HasIndex(x => x.Token);
+            e.HasOne(x => x.User)
+                .WithMany(x => x.RefreshTokens)
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+}
