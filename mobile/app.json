@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "PDKS",
+    "slug": "pdks-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "pdks",
+    "splash": {
+      "backgroundColor": "#1e3a8a"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "QR kod ile mesai giriş/çıkışı için kamera erişimi gereklidir.",
+        "NSLocationWhenInUseUsageDescription": "Mesai girişinin iş yerinden yapıldığını doğrulamak için konum erişimi gereklidir."
+      }
+    },
+    "android": {
+      "permissions": ["CAMERA", "ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        { "cameraPermission": "QR ile mesai girişi için kamera izni gereklidir." }
+      ],
+      [
+        "expo-location",
+        { "locationWhenInUsePermission": "Mesai girişini iş yerinde doğrulamak için konum izni gereklidir." }
+      ]
+    ],
+    "extra": {
+      "apiUrl": "http://10.0.2.2:5080"
+    }
+  }
+}

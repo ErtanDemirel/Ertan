@@ -35,9 +35,9 @@ public record CreatePersonnelRequest(
     int? ManagerId,
     int? ServiceRouteId,
     int? ShiftId,
-    /// <summary>Yıllık izin hakkı (gün). Bu yıl için bakiye oluşturulur.</summary>
+    // Yıllık izin hakkı (gün). Bu yıl için bakiye oluşturulur.
     decimal? AnnualLeaveDays,
-    /// <summary>Personele giriş hesabı oluşturulsun mu?</summary>
+    // Personele giriş hesabı oluşturulsun mu?
     bool CreateLoginAccount,
     string? Username,
     string? InitialPassword);

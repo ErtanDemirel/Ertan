@@ -19,12 +19,17 @@ public class ShiftController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ShiftDto>>> List(CancellationToken ct)
     {
-        var items = await _db.Shifts.AsNoTracking()
+        var rows = await _db.Shifts.AsNoTracking()
             .OrderBy(s => s.StartTime)
-            .Select(s => new ShiftDto(
-                s.Id, s.Name, s.StartTime.ToString("HH\\:mm"), s.EndTime.ToString("HH\\:mm"),
-                s.CrossesMidnight, s.Color, s.Description, s.IsActive, s.Personnel.Count))
+            .Select(s => new
+            {
+                s.Id, s.Name, s.StartTime, s.EndTime, s.CrossesMidnight,
+                s.Color, s.Description, s.IsActive, Count = s.Personnel.Count
+            })
             .ToListAsync(ct);
+        var items = rows.Select(s => new ShiftDto(
+            s.Id, s.Name, s.StartTime.ToString("HH\\:mm"), s.EndTime.ToString("HH\\:mm"),
+            s.CrossesMidnight, s.Color, s.Description, s.IsActive, s.Count)).ToList();
         return Ok(items);
     }
 

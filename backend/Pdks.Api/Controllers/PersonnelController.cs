@@ -58,11 +58,11 @@ public class PersonnelController : ControllerBase
         if (isActive.HasValue) q = q.Where(p => p.IsActive == isActive);
 
         var total = await q.CountAsync(ct);
-        var items = await q
+        var rows = await q
             .OrderBy(p => p.FirstName).ThenBy(p => p.LastName)
             .Skip((page - 1) * pageSize).Take(pageSize)
-            .Select(p => ToDto(p))
             .ToListAsync(ct);
+        var items = rows.Select(ToDto).ToList();
 
         return Ok(new PagedResult<PersonnelDto>(items, total, page, pageSize));
     }

@@ -22,7 +22,8 @@ public class MealController : ControllerBase
         [FromQuery] DateOnly? from, [FromQuery] DateOnly? to, CancellationToken ct)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var start = from ?? today.AddDays(-(int)((today.DayOfWeek + 6) % 7)); // haftanın pazartesisi
+        // Haftanın pazartesisi (Pazartesi=0 ofset)
+        var start = from ?? today.AddDays(-(((int)today.DayOfWeek + 6) % 7));
         var end = to ?? start.AddDays(13);
 
         var items = await _db.MealMenus.AsNoTracking()

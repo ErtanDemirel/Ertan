@@ -109,7 +109,8 @@ public class AttendanceController : ControllerBase
     {
         var pid = User.GetPersonnelId();
         if (pid is null) return Ok(Array.Empty<AttendanceDto>());
-        return Ok(await QueryAttendance(pid, from, to).Take(200).ToListAsync(ct));
+        var rows = await QueryAttendance(pid, from, to).Take(200).ToListAsync(ct);
+        return Ok(rows.Select(MapAttendance).ToList());
     }
 
     /// <summary>Amir/Admin: tüm mesai kayıtları (personel/tarih filtresi).</summary>
@@ -118,20 +119,24 @@ public class AttendanceController : ControllerBase
     public async Task<ActionResult<IEnumerable<AttendanceDto>>> List(
         [FromQuery] int? personnelId, [FromQuery] DateOnly? from, [FromQuery] DateOnly? to,
         CancellationToken ct)
-        => Ok(await QueryAttendance(personnelId, from, to).Take(1000).ToListAsync(ct));
+    {
+        var rows = await QueryAttendance(personnelId, from, to).Take(1000).ToListAsync(ct);
+        return Ok(rows.Select(MapAttendance).ToList());
+    }
 
-    private IQueryable<AttendanceDto> QueryAttendance(int? personnelId, DateOnly? from, DateOnly? to)
+    private IQueryable<Attendance> QueryAttendance(int? personnelId, DateOnly? from, DateOnly? to)
     {
         var q = _db.Attendances.Include(a => a.Personnel).Include(a => a.WorkLocation)
             .AsNoTracking().AsQueryable();
         if (personnelId.HasValue) q = q.Where(a => a.PersonnelId == personnelId);
         if (from.HasValue) q = q.Where(a => a.Timestamp >= from.Value.ToDateTime(TimeOnly.MinValue));
         if (to.HasValue) q = q.Where(a => a.Timestamp <= to.Value.ToDateTime(TimeOnly.MaxValue));
-        return q.OrderByDescending(a => a.Timestamp)
-            .Select(a => new AttendanceDto(
-                a.Id, a.PersonnelId, a.Personnel!.FirstName + " " + a.Personnel.LastName,
-                a.Personnel.SicilNo, a.Type.ToString(), a.Timestamp,
-                a.WorkLocation != null ? a.WorkLocation.Name : null,
-                a.DistanceMeters, a.IsWithinGeofence));
+        return q.OrderByDescending(a => a.Timestamp);
     }
+
+    private static AttendanceDto MapAttendance(Attendance a) => new(
+        a.Id, a.PersonnelId,
+        a.Personnel is null ? "" : a.Personnel.FirstName + " " + a.Personnel.LastName,
+        a.Personnel?.SicilNo ?? "", a.Type.ToString(), a.Timestamp,
+        a.WorkLocation?.Name, a.DistanceMeters, a.IsWithinGeofence);
 }

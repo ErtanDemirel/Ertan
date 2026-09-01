@@ -19,16 +19,19 @@ public class ServiceRouteController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ServiceRouteDto>>> List(CancellationToken ct)
     {
-        var items = await _db.ServiceRoutes
+        var rows = await _db.ServiceRoutes
             .AsNoTracking()
             .OrderBy(r => r.Name)
-            .Select(r => new ServiceRouteDto(
-                r.Id, r.Name, r.Description, r.Stops,
-                r.DepartureTime == null ? null : r.DepartureTime.Value.ToString("HH\\:mm"),
-                r.ReturnTime == null ? null : r.ReturnTime.Value.ToString("HH\\:mm"),
-                r.DriverName, r.PlateNumber, r.IsActive,
-                r.Personnel.Count))
+            .Select(r => new
+            {
+                r.Id, r.Name, r.Description, r.Stops, r.DepartureTime, r.ReturnTime,
+                r.DriverName, r.PlateNumber, r.IsActive, Count = r.Personnel.Count
+            })
             .ToListAsync(ct);
+        var items = rows.Select(r => new ServiceRouteDto(
+            r.Id, r.Name, r.Description, r.Stops,
+            r.DepartureTime?.ToString("HH\\:mm"), r.ReturnTime?.ToString("HH\\:mm"),
+            r.DriverName, r.PlateNumber, r.IsActive, r.Count)).ToList();
         return Ok(items);
     }
 

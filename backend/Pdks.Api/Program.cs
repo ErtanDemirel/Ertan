@@ -18,6 +18,16 @@ var jwt = builder.Configuration.GetSection(JwtOptions.Section).Get<JwtOptions>()
 if (string.IsNullOrWhiteSpace(jwt.Key) || jwt.Key.Length < 32)
     jwt.Key = "PDKS-DEV-ONLY-CHANGE-THIS-SECRET-KEY-32+chars!"; // Üretimde env/secret'tan verin.
 
+// TokenService (IOptions) ile JwtBearer'ın aynı anahtarı kullanmasını garanti et.
+builder.Services.Configure<JwtOptions>(o =>
+{
+    o.Issuer = jwt.Issuer;
+    o.Audience = jwt.Audience;
+    o.Key = jwt.Key;
+    o.AccessTokenMinutes = jwt.AccessTokenMinutes;
+    o.RefreshTokenDays = jwt.RefreshTokenDays;
+});
+
 // ---------------- Database ----------------
 var provider = builder.Configuration.GetValue<string>("Database:Provider") ?? "SqlServer";
 var connString = builder.Configuration.GetConnectionString("Default")

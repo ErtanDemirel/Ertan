@@ -102,8 +102,8 @@ public class LeaveController : ControllerBase
         var pid = User.GetPersonnelId();
         if (pid is null) return Ok(new { requests = Array.Empty<LeaveRequestDto>(), balance = (LeaveBalanceDto?)null });
 
-        var requests = await QueryRequests().Where(r => r.PersonnelId == pid)
-            .OrderByDescending(r => r.RequestedAt).ToListAsync(ct);
+        var requests = await LoadRequestsAsync(
+            _db.LeaveRequests.Where(r => r.PersonnelId == pid).OrderByDescending(r => r.RequestedAt), ct);
 
         var year = DateTime.UtcNow.Year;
         var b = await _db.LeaveBalances.Include(x => x.Personnel)
@@ -121,10 +121,11 @@ public class LeaveController : ControllerBase
     public async Task<ActionResult<IEnumerable<LeaveRequestDto>>> Requests(
         [FromQuery] string? status, CancellationToken ct)
     {
-        var q = QueryRequests();
+        IQueryable<LeaveRequest> q = _db.LeaveRequests;
         if (Enum.TryParse<LeaveStatus>(status, true, out var st))
-            q = q.Where(r => r.Status == st.ToString());
-        return Ok(await q.OrderByDescending(r => r.RequestedAt).Take(500).ToListAsync(ct));
+            q = q.Where(r => r.Status == st);
+        q = q.OrderByDescending(r => r.RequestedAt).Take(500);
+        return Ok(await LoadRequestsAsync(q, ct));
     }
 
     /// <summary>Amir: benim onayımı bekleyen talepler.</summary>
@@ -140,7 +141,7 @@ public class LeaveController : ControllerBase
         if (!isAdmin && pid is not null)
             q = q.Where(r => r.ApproverId == pid);
 
-        var items = await ProjectRequests(q).OrderBy(r => r.RequestedAt).ToListAsync(ct);
+        var items = await LoadRequestsAsync(q.OrderBy(r => r.RequestedAt), ct);
         return Ok(items);
     }
 
@@ -155,8 +156,8 @@ public class LeaveController : ControllerBase
         {
             var created = await _leave.CreateAsync(pid.Value, req.LeaveTypeId,
                 req.StartDate, req.EndDate, req.Reason, ct);
-            var dto = await ProjectRequests(_db.LeaveRequests.Where(r => r.Id == created.Id))
-                .FirstAsync(ct);
+            var dto = (await LoadRequestsAsync(_db.LeaveRequests.Where(r => r.Id == created.Id), ct))
+                .First();
             return Ok(dto);
         }
         catch (InvalidOperationException ex)
@@ -210,19 +211,22 @@ public class LeaveController : ControllerBase
     }
 
     // ---- helpers ----
-    private IQueryable<LeaveRequestDto> QueryRequests() =>
-        ProjectRequests(_db.LeaveRequests);
+    // Not: enum.ToString() SQL'e güvenilir çevrilmediğinden entity'ler belleğe alınıp map'lenir.
+    private async Task<List<LeaveRequestDto>> LoadRequestsAsync(IQueryable<LeaveRequest> q, CancellationToken ct)
+    {
+        var rows = await q
+            .Include(r => r.Personnel).Include(r => r.LeaveType).Include(r => r.Approver)
+            .AsNoTracking().ToListAsync(ct);
+        return rows.Select(MapRequest).ToList();
+    }
 
-    private static IQueryable<LeaveRequestDto> ProjectRequests(IQueryable<LeaveRequest> q) =>
-        q.Include(r => r.Personnel).Include(r => r.LeaveType).Include(r => r.Approver)
-         .AsNoTracking()
-         .Select(r => new LeaveRequestDto(
-            r.Id, r.PersonnelId,
-            r.Personnel!.FirstName + " " + r.Personnel.LastName,
-            r.Personnel.SicilNo,
-            r.LeaveTypeId, r.LeaveType!.Name, r.LeaveType.DeductsFromAnnual,
-            r.StartDate, r.EndDate, r.TotalDays, r.Reason, r.Status.ToString(),
-            r.ApproverId,
-            r.Approver == null ? null : r.Approver.FirstName + " " + r.Approver.LastName,
-            r.ManagerComment, r.RequestedAt, r.DecidedAt));
+    private static LeaveRequestDto MapRequest(LeaveRequest r) => new(
+        r.Id, r.PersonnelId,
+        r.Personnel is null ? "" : r.Personnel.FirstName + " " + r.Personnel.LastName,
+        r.Personnel?.SicilNo ?? "",
+        r.LeaveTypeId, r.LeaveType?.Name ?? "", r.LeaveType?.DeductsFromAnnual ?? false,
+        r.StartDate, r.EndDate, r.TotalDays, r.Reason, r.Status.ToString(),
+        r.ApproverId,
+        r.Approver == null ? null : r.Approver.FirstName + " " + r.Approver.LastName,
+        r.ManagerComment, r.RequestedAt, r.DecidedAt);
 }
