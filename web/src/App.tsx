@@ -6,6 +6,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
 import PersonnelPage from './pages/Personnel';
 import ShiftsPage from './pages/Shifts';
+import ShiftPlanPage from './pages/ShiftPlan';
 import LeavePage from './pages/LeaveManagement';
 import AnnouncementsPage from './pages/Announcements';
 import MealsPage from './pages/Meals';
@@ -54,6 +55,7 @@ export default function App() {
         <Route index element={<Dashboard />} />
         <Route path="personnel" element={<PersonnelPage />} />
         <Route path="shifts" element={<ShiftsPage />} />
+        <Route path="shift-plan" element={<ShiftPlanPage />} />
         <Route path="leave" element={<LeavePage />} />
         <Route path="payroll" element={<PayrollPage />} />
         <Route path="candidates" element={<CandidatesPage />} />

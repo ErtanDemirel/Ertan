@@ -2,7 +2,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, CalendarClock, CalendarDays, Megaphone,
   UtensilsCrossed, Bus, MapPin, LogOut, ClipboardCheck, ShieldCheck,
-  Wallet, UserPlus, BarChart3,
+  Wallet, UserPlus, BarChart3, CalendarRange,
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 
@@ -10,6 +10,7 @@ const nav = [
   { to: '/', label: 'Panel', icon: LayoutDashboard, end: true },
   { to: '/personnel', label: 'Personel', icon: Users },
   { to: '/shifts', label: 'Vardiya', icon: CalendarClock },
+  { to: '/shift-plan', label: 'Vardiya Planı', icon: CalendarRange },
   { to: '/leave', label: 'İzin Yönetimi', icon: CalendarDays },
   { to: '/payroll', label: 'Bordro', icon: Wallet },
   { to: '/candidates', label: 'Aday Yönetimi', icon: UserPlus },

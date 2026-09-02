@@ -38,3 +38,6 @@ yarn-error.log*
 # ---------- OS ----------
 .DS_Store
 Thumbs.db
+
+# TS build info
+*.tsbuildinfo
