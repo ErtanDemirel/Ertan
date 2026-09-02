@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Pdks.Api.Data;
@@ -12,22 +13,30 @@ namespace Pdks.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[EnableRateLimiting("auth")]
 public class AuthController : ControllerBase
 {
+    private const int MaxFailedAttempts = 5;
+    private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
+
     private readonly AppDbContext _db;
     private readonly PasswordHasher _hasher;
     private readonly TokenService _tokens;
     private readonly ISmsSender _sms;
+    private readonly AuditService _audit;
     private readonly OtpOptions _otp;
     private readonly JwtOptions _jwt;
     private readonly ILogger<AuthController> _log;
 
     public AuthController(AppDbContext db, PasswordHasher hasher, TokenService tokens,
-        ISmsSender sms, IOptions<OtpOptions> otp, IOptions<JwtOptions> jwt, ILogger<AuthController> log)
+        ISmsSender sms, AuditService audit, IOptions<OtpOptions> otp, IOptions<JwtOptions> jwt,
+        ILogger<AuthController> log)
     {
-        _db = db; _hasher = hasher; _tokens = tokens; _sms = sms;
+        _db = db; _hasher = hasher; _tokens = tokens; _sms = sms; _audit = audit;
         _otp = otp.Value; _jwt = jwt.Value; _log = log;
     }
+
+    private string? Ip() => HttpContext.Connection.RemoteIpAddress?.ToString();
 
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponse>> Login(LoginRequest req, CancellationToken ct)
@@ -36,13 +45,41 @@ public class AuthController : ControllerBase
             .Include(u => u.Personnel)
             .FirstOrDefaultAsync(u => u.Username == req.Username, ct);
 
-        // Zamanlama saldırılarına karşı: kullanıcı yoksa da doğrulama süresi harca
-        if (user is null || !user.IsActive || !_hasher.Verify(req.Password, user.PasswordHash, user.PasswordSalt))
-            return Unauthorized(new { message = "Kullanıcı adı veya şifre hatalı." });
+        // Hesap kilidi kontrolü (brute-force koruması)
+        if (user is not null && user.LockoutEnd is not null && user.LockoutEnd > DateTime.UtcNow)
+        {
+            await _audit.LogAsync("auth.login.locked", user.Id, req.Username, Ip(), ct);
+            return StatusCode(StatusCodes.Status423Locked, new
+            {
+                message = "Hesabınız çok fazla hatalı denemeden dolayı geçici olarak kilitlendi. Lütfen biraz sonra tekrar deneyin."
+            });
+        }
 
-        user.LastLoginAt = DateTime.UtcNow;
+        // Zamanlama saldırılarına karşı: kullanıcı yoksa da doğrulama süresi harca
+        var ok = user is not null && user.IsActive
+                 && _hasher.Verify(req.Password, user.PasswordHash, user.PasswordSalt);
+        if (!ok)
+        {
+            if (user is not null)
+            {
+                user.FailedLoginCount++;
+                if (user.FailedLoginCount >= MaxFailedAttempts)
+                {
+                    user.LockoutEnd = DateTime.UtcNow.Add(LockoutDuration);
+                    user.FailedLoginCount = 0;
+                }
+                await _db.SaveChangesAsync(ct);
+            }
+            await _audit.LogAsync("auth.login.fail", user?.Id, req.Username, Ip(), ct);
+            return Unauthorized(new { message = "Kullanıcı adı veya şifre hatalı." });
+        }
+
+        user!.LastLoginAt = DateTime.UtcNow;
+        user.FailedLoginCount = 0;
+        user.LockoutEnd = null;
         var auth = await BuildAuthResponseAsync(user, ct);
         await _db.SaveChangesAsync(ct);
+        await _audit.LogAsync("auth.login.ok", user.Id, req.Username, Ip(), ct);
         return Ok(auth);
     }
 
@@ -88,7 +125,7 @@ public class AuthController : ControllerBase
             await _db.SaveChangesAsync(ct);
 
             await _sms.SendAsync(user.PhoneNumber!,
-                $"PDKS sifre sifirlama kodunuz: {code}. {_otp.ExpiryMinutes} dk gecerlidir.", ct);
+                $"COKO-SIS sifre sifirlama kodunuz: {code}. {_otp.ExpiryMinutes} dk gecerlidir.", ct);
         }
 
         return Ok(new { message = "Telefon numaranıza bir doğrulama kodu gönderildi (kayıtlıysa)." });
@@ -125,6 +162,9 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = "Kod hatalı." });
         }
 
+        if (!PasswordPolicy.IsValid(req.NewPassword, out var policyError))
+            return BadRequest(new { message = policyError });
+
         var (hash, salt) = _hasher.Hash(req.NewPassword);
         user.PasswordHash = hash;
         user.PasswordSalt = salt;
@@ -148,10 +188,14 @@ public class AuthController : ControllerBase
         if (!_hasher.Verify(req.CurrentPassword, user.PasswordHash, user.PasswordSalt))
             return BadRequest(new { message = "Mevcut şifre hatalı." });
 
+        if (!PasswordPolicy.IsValid(req.NewPassword, out var policyError))
+            return BadRequest(new { message = policyError });
+
         var (hash, salt) = _hasher.Hash(req.NewPassword);
         user.PasswordHash = hash;
         user.PasswordSalt = salt;
         await _db.SaveChangesAsync(ct);
+        await _audit.LogAsync("auth.password.change", user.Id, null, Ip(), ct);
         return Ok(new { message = "Şifre güncellendi." });
     }
 

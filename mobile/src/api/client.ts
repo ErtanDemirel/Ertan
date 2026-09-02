@@ -72,6 +72,11 @@ api.interceptors.response.use(
   }
 );
 
+/** İndirme isteklerinde Authorization başlığı için erişim jetonu. */
+export function getAccessToken(): string | null {
+  return accessToken;
+}
+
 export function apiError(e: unknown): string {
   const err = e as AxiosError<{ message?: string }>;
   return err.response?.data?.message || err.message || 'Beklenmeyen bir hata oluştu.';

@@ -89,7 +89,8 @@ public static class DbSeeder
                 PhoneNumber = "5551112233",
                 HireDate = new DateTime(2018, 3, 1),
                 ShiftId = dayShift.Id,
-                ServiceRouteId = route1.Id
+                ServiceRouteId = route1.Id,
+                ServiceStop = "Belediye"
             };
             db.Personnel.Add(manager);
             await db.SaveChangesAsync();
@@ -102,13 +103,49 @@ public static class DbSeeder
                 Department = "Üretim",
                 Title = "Operatör",
                 PhoneNumber = "5552223344",
+                NationalId = "11111111111",
                 HireDate = new DateTime(2021, 6, 15),
                 ManagerId = manager.Id,
                 ShiftId = dayShift.Id,
-                ServiceRouteId = route1.Id
+                ServiceRouteId = route1.Id,
+                ServiceStop = "Meydan"
             };
             db.Personnel.Add(worker);
+
+            // Eski (işten çıkmış) çalışan — aday eşleştirme demosu için
+            var former = new Personnel
+            {
+                SicilNo = "0900",
+                FirstName = "Kemal",
+                LastName = "Aslan",
+                Department = "Depo",
+                Title = "Forklift Operatörü",
+                NationalId = "22222222222",
+                HireDate = new DateTime(2016, 2, 1),
+                ExitDate = new DateTime(2019, 8, 31),
+                ExitReason = "İstifa",
+                IsActive = false,
+                ServiceStop = "Sanayi"
+            };
+            db.Personnel.Add(former);
             await db.SaveChangesAsync();
+
+            // Örnek iş başvuruları (biri eski çalışanla aynı TCKN)
+            db.JobApplications.AddRange(
+                new JobApplication
+                {
+                    FirstName = "Kemal", LastName = "Aslan", NationalId = "22222222222",
+                    Phone = "5553334455", Position = "Depo Görevlisi",
+                    Education = "Lise", ExperienceYears = 5,
+                    PreviousWorkplace = "COKO-SİS (eski)", Status = ApplicationStatus.New
+                },
+                new JobApplication
+                {
+                    FirstName = "Elif", LastName = "Yıldız", NationalId = "33333333333",
+                    Phone = "5554445566", Position = "Muhasebe Asistanı",
+                    Education = "Üniversite", ExperienceYears = 2, Status = ApplicationStatus.New
+                }
+            );
 
             // Bakiyeler
             var year = DateTime.UtcNow.Year;

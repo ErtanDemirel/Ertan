@@ -25,7 +25,8 @@ public class LeaveService
 
     /// <summary>Yeni izin talebi oluşturur; yıllık izinse bakiyeden rezerve eder.</summary>
     public async Task<LeaveRequest> CreateAsync(int personnelId, int leaveTypeId,
-        DateOnly start, DateOnly end, string? reason, CancellationToken ct = default)
+        DateOnly start, DateOnly end, string? title, string? reason, decimal? days,
+        CancellationToken ct = default)
     {
         if (end < start)
             throw new InvalidOperationException("Bitiş tarihi başlangıçtan önce olamaz.");
@@ -36,9 +37,12 @@ public class LeaveService
         var type = await _db.LeaveTypes.FirstOrDefaultAsync(t => t.Id == leaveTypeId && t.IsActive, ct)
             ?? throw new InvalidOperationException("İzin türü geçersiz.");
 
-        var totalDays = CalculateWorkingDays(start, end);
-        if (totalDays <= 0)
-            throw new InvalidOperationException("Seçilen aralıkta çalışma günü bulunmuyor.");
+        // Talep sahibi gün girebilir; aksi halde hafta sonları hariç hesaplanır.
+        var calc = CalculateWorkingDays(start, end);
+        var totalDays = days is > 0 ? days.Value : calc;
+        var span = end.DayNumber - start.DayNumber + 1; // takvim günü üst sınırı
+        if (totalDays <= 0 || totalDays > span)
+            throw new InvalidOperationException("Gün sayısı geçersiz (0 ile tarih aralığı arasında olmalı).");
 
         // Çakışan (onaylı/bekleyen) talep kontrolü
         var overlaps = await _db.LeaveRequests.AnyAsync(r =>
@@ -64,6 +68,7 @@ public class LeaveService
             StartDate = start,
             EndDate = end,
             TotalDays = totalDays,
+            Title = title,
             Reason = reason,
             Status = LeaveStatus.Pending,
             ApproverId = personnel.ManagerId,

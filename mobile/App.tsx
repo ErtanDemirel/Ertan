@@ -16,6 +16,7 @@ import AnnouncementsScreen from './src/screens/AnnouncementsScreen';
 import LeaveScreen from './src/screens/LeaveScreen';
 import MealsScreen from './src/screens/MealsScreen';
 import CheckInScreen from './src/screens/CheckInScreen';
+import PayrollScreen from './src/screens/PayrollScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import { colors } from './src/theme';
 
@@ -31,6 +32,7 @@ const icons: Record<string, keyof typeof Ionicons.glyphMap> = {
   'İzin': 'calendar-outline',
   Yemek: 'restaurant-outline',
   Mesai: 'qr-code-outline',
+  Bordro: 'wallet-outline',
   Profil: 'person-outline',
 };
 
@@ -51,6 +53,7 @@ function Tabs() {
       <Tab.Screen name="Duyurular" component={AnnouncementsScreen} />
       <Tab.Screen name="İzin" component={LeaveScreen} />
       <Tab.Screen name="Yemek" component={MealsScreen} />
+      <Tab.Screen name="Bordro" component={PayrollScreen} />
       <Tab.Screen name="Profil" component={ProfileScreen} />
     </Tab.Navigator>
   );

@@ -22,6 +22,10 @@ public class AppDbContext : DbContext
     public DbSet<Attendance> Attendances => Set<Attendance>();
     public DbSet<PasswordResetCode> PasswordResetCodes => Set<PasswordResetCode>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<LeaveAttachment> LeaveAttachments => Set<LeaveAttachment>();
+    public DbSet<Payslip> Payslips => Set<Payslip>();
+    public DbSet<JobApplication> JobApplications => Set<JobApplication>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -168,5 +172,39 @@ public class AppDbContext : DbContext
                 .HasForeignKey(x => x.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
+
+        // ---- LeaveAttachment ----
+        b.Entity<LeaveAttachment>(e =>
+        {
+            e.HasOne(x => x.LeaveRequest)
+                .WithMany(x => x.Attachments)
+                .HasForeignKey(x => x.LeaveRequestId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ---- Payslip ----
+        b.Entity<Payslip>(e =>
+        {
+            e.Property(x => x.NetAmount).HasPrecision(12, 2);
+            e.HasIndex(x => new { x.PersonnelId, x.Year, x.Month });
+            e.HasOne(x => x.Personnel)
+                .WithMany()
+                .HasForeignKey(x => x.PersonnelId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.UploadedBy)
+                .WithMany()
+                .HasForeignKey(x => x.UploadedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ---- JobApplication ----
+        b.Entity<JobApplication>(e =>
+        {
+            e.Ignore(x => x.FullName);
+            e.HasIndex(x => x.NationalId);
+        });
+
+        // ---- AuditLog ----
+        b.Entity<AuditLog>(e => e.HasIndex(x => x.CreatedAt));
     }
 }

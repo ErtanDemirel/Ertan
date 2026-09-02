@@ -57,11 +57,17 @@ public class LeaveRequest
     public DateOnly StartDate { get; set; }
     public DateOnly EndDate { get; set; }
 
-    /// <summary>Toplam iş günü / gün sayısı.</summary>
+    /// <summary>Toplam iş günü / gün sayısı (talep sahibi girer, sunucu doğrular).</summary>
     public decimal TotalDays { get; set; }
 
-    [MaxLength(500)]
+    /// <summary>Talep başlığı.</summary>
+    [MaxLength(150)]
+    public string? Title { get; set; }
+
+    [MaxLength(1000)]
     public string? Reason { get; set; }
+
+    public ICollection<LeaveAttachment> Attachments { get; set; } = new List<LeaveAttachment>();
 
     public LeaveStatus Status { get; set; } = LeaveStatus.Pending;
 

@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -47,10 +48,14 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
 });
 
 // ---------------- App services ----------------
+builder.Services.Configure<StorageOptions>(builder.Configuration.GetSection(StorageOptions.Section));
 builder.Services.AddSingleton<PasswordHasher>();
 builder.Services.AddSingleton<TokenService>();
 builder.Services.AddSingleton<QrTokenService>();
+builder.Services.AddSingleton<FileStorageService>();
+builder.Services.AddSingleton<LeaveDocumentService>();
 builder.Services.AddScoped<LeaveService>();
+builder.Services.AddScoped<AuditService>();
 
 // SMS sağlayıcısı
 var smsProvider = builder.Configuration.GetValue<string>($"{SmsOptions.Section}:Provider") ?? "Console";
@@ -78,9 +83,35 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 // ---------------- CORS ----------------
-const string CorsPolicy = "PdksClients";
+const string CorsPolicy = "CokoClients";
+var corsOrigins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? Array.Empty<string>();
 builder.Services.AddCors(o => o.AddPolicy(CorsPolicy, p =>
-    p.AllowAnyHeader().AllowAnyMethod().SetIsOriginAllowed(_ => true)));
+{
+    if (corsOrigins.Length > 0)
+        p.WithOrigins(corsOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials();
+    else if (builder.Environment.IsDevelopment())
+        // Geliştirmede tüm origin'lere izin (kimlik bilgisi olmadan).
+        p.SetIsOriginAllowed(_ => true).AllowAnyHeader().AllowAnyMethod();
+    else
+        // Üretimde Cors:Origins tanımlı değilse hiçbir cross-origin isteğe izin verilmez.
+        p.WithOrigins("https://localhost").AllowAnyHeader().AllowAnyMethod();
+}));
+
+// ---------------- Rate limiting ----------------
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    // Kimlik doğrulama uçları için IP başına dakikada 10 istek.
+    options.AddPolicy("auth", ctx =>
+        System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+            ctx.Connection.RemoteIpAddress?.ToString() ?? "anon",
+            _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+});
 
 // ---------------- MVC / JSON ----------------
 builder.Services.AddControllers().AddJsonOptions(o =>
@@ -92,7 +123,7 @@ builder.Services.AddControllers().AddJsonOptions(o =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "PDKS API", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "COKO-SİS API", Version = "v1" });
     var scheme = new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -119,14 +150,32 @@ using (var scope = app.Services.CreateScope())
     await DbSeeder.SeedAsync(db, hasher);
 }
 
+// Güvenlik başlıkları (her yanıta)
+app.Use(async (ctx, next) =>
+{
+    var h = ctx.Response.Headers;
+    h["X-Content-Type-Options"] = "nosniff";
+    h["X-Frame-Options"] = "DENY";
+    h["Referrer-Policy"] = "no-referrer";
+    h["X-Permitted-Cross-Domain-Policies"] = "none";
+    await next();
+});
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+    app.UseHttpsRedirection();
+}
+
 app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseCors(CorsPolicy);
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-app.MapGet("/", () => Results.Ok(new { service = "PDKS API", status = "running", docs = "/swagger" }));
+app.MapGet("/", () => Results.Ok(new { service = "COKO-SİS API", status = "running", docs = "/swagger" }));
 
 app.Run();

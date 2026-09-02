@@ -33,7 +33,7 @@ export default function Login() {
           <div className="mb-3 rounded-2xl bg-brand-600 p-3 text-white">
             <ShieldCheck size={28} />
           </div>
-          <h1 className="text-2xl font-bold text-slate-800">PDKS Yönetim Paneli</h1>
+          <h1 className="text-2xl font-bold text-slate-800">COKO-SİS</h1>
           <p className="text-sm text-slate-500">Personel Devam Kontrol Sistemi</p>
         </div>
 
@@ -67,9 +67,12 @@ export default function Login() {
           </button>
         </form>
 
-        <div className="mt-4 text-center">
-          <Link to="/forgot-password" className="text-sm text-brand-600 hover:underline">
+        <div className="mt-4 flex items-center justify-between text-sm">
+          <Link to="/forgot-password" className="text-brand-600 hover:underline">
             Şifremi unuttum
+          </Link>
+          <Link to="/basvuru" className="text-brand-600 hover:underline">
+            İş başvurusu →
           </Link>
         </div>
 

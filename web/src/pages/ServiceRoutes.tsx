@@ -6,7 +6,7 @@ import type { ServiceRoute } from '../api/types';
 import { apiError } from '../api/client';
 import { Modal, Field, Spinner, EmptyState } from '../components/ui';
 
-const empty = { name: '', description: '', stops: '', departureTime: '', returnTime: '', driverName: '', plateNumber: '', isActive: true };
+const empty = { name: '', description: '', stops: '', departureTime: '', returnTime: '', driverName: '', plateNumber: '', capacity: '27', isActive: true };
 
 export default function ServiceRoutesPage() {
   const qc = useQueryClient();
@@ -31,7 +31,7 @@ export default function ServiceRoutesPage() {
   function openCreate() { setEditing(null); setForm({ ...empty }); setError(''); setOpen(true); }
   function openEdit(r: ServiceRoute) {
     setEditing(r); setError('');
-    setForm({ name: r.name, description: r.description || '', stops: r.stops || '', departureTime: r.departureTime || '', returnTime: r.returnTime || '', driverName: r.driverName || '', plateNumber: r.plateNumber || '', isActive: r.isActive });
+    setForm({ name: r.name, description: r.description || '', stops: r.stops || '', departureTime: r.departureTime || '', returnTime: r.returnTime || '', driverName: r.driverName || '', plateNumber: r.plateNumber || '', capacity: String(r.capacity ?? 27), isActive: r.isActive });
     setOpen(true);
   }
 
@@ -74,7 +74,7 @@ export default function ServiceRoutesPage() {
       <Modal open={open} onClose={() => setOpen(false)} title={editing ? 'Güzergah Düzenle' : 'Yeni Güzergah'}
         footer={<>
           <button className="btn-secondary" onClick={() => setOpen(false)}>Vazgeç</button>
-          <button className="btn-primary" onClick={() => save.mutate(form)} disabled={save.isPending}>Kaydet</button>
+          <button className="btn-primary" onClick={() => save.mutate({ ...form, capacity: Number(form.capacity) || 27 })} disabled={save.isPending}>Kaydet</button>
         </>}>
         {error && <div className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</div>}
         <div className="space-y-4">
@@ -88,6 +88,7 @@ export default function ServiceRoutesPage() {
             <Field label="Şoför"><input className="input" value={form.driverName} onChange={(e) => set('driverName', e.target.value)} /></Field>
             <Field label="Plaka"><input className="input" value={form.plateNumber} onChange={(e) => set('plateNumber', e.target.value)} /></Field>
           </div>
+          <Field label="Araç Kapasitesi (kişi)" hint="Gerekli servis sayısı bu kapasiteye göre hesaplanır"><input type="number" className="input" value={form.capacity} onChange={(e) => set('capacity', e.target.value)} /></Field>
           <Field label="Açıklama"><input className="input" value={form.description} onChange={(e) => set('description', e.target.value)} /></Field>
         </div>
       </Modal>

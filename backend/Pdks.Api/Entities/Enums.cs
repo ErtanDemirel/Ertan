@@ -28,3 +28,14 @@ public enum AttendanceType
     CheckIn = 0,
     CheckOut = 1
 }
+
+/// <summary>İş başvurusu / aday durumu.</summary>
+public enum ApplicationStatus
+{
+    New = 0,
+    Reviewing = 1,
+    Interview = 2,
+    Offered = 3,
+    Hired = 4,
+    Rejected = 5
+}

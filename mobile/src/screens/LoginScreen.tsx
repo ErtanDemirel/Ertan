@@ -32,7 +32,7 @@ export default function LoginScreen({ navigation }: any) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.logoWrap}>
-        <Text style={styles.logo}>PDKS</Text>
+        <Text style={styles.logo}>COKO-SİS</Text>
         <Text style={styles.subtitle}>Personel Devam Kontrol Sistemi</Text>
       </View>
 
@@ -75,7 +75,7 @@ export default function LoginScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.primaryDark, justifyContent: 'center', padding: 24 },
   logoWrap: { alignItems: 'center', marginBottom: 28 },
-  logo: { fontSize: 44, fontWeight: '800', color: '#fff', letterSpacing: 2 },
+  logo: { fontSize: 36, fontWeight: '800', color: '#fff', letterSpacing: 2 },
   subtitle: { color: '#cbd5e1', marginTop: 4 },
   card: { backgroundColor: colors.card, borderRadius: 18, padding: 22 },
   label: { color: colors.muted, fontSize: 13, marginBottom: 6, marginTop: 8 },

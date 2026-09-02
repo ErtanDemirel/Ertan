@@ -13,8 +13,8 @@ public record WorkLocationRequest(
     [property: Required] double Longitude,
     int RadiusMeters, bool IsActive);
 
-/// <summary>Kiosk ekranında gösterilecek dönen QR kod içeriği.</summary>
-public record QrPayloadDto(int LocationId, string LocationName, string Code, string QrContent, int SecondsRemaining);
+/// <summary>Kiosk ekranında gösterilecek SABİT QR kod içeriği.</summary>
+public record QrPayloadDto(int LocationId, string LocationName, string Code, string QrContent);
 
 /// <summary>Mobil uygulamanın QR okuttuktan sonra gönderdiği mesai kaydı.</summary>
 public record CheckInRequest(

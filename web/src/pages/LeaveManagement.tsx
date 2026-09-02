@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, X, Pencil, Plus } from 'lucide-react';
-import { leaveApi, personnelApi } from '../api/services';
+import { Check, X, Pencil, Plus, FileText, Paperclip } from 'lucide-react';
+import { leaveApi, personnelApi, downloadFile } from '../api/services';
 import type { LeaveRequest, LeaveType } from '../api/types';
 import { apiError } from '../api/client';
 import { Modal, Field, Spinner, EmptyState, StatusBadge } from '../components/ui';
@@ -64,9 +64,23 @@ function DecideModal({ request, onClose }: { request: LeaveRequest | null; onClo
       </>}>
       <div className="space-y-2 text-sm">
         <p><b>Personel:</b> {request.personnelName} ({request.sicilNo})</p>
+        {request.title && <p><b>Başlık:</b> {request.title}</p>}
         <p><b>Tür:</b> {request.leaveTypeName} {request.deductsFromAnnual && <span className="badge bg-amber-100 text-amber-700">yıllıktan düşer</span>}</p>
         <p><b>Tarih:</b> {request.startDate} → {request.endDate} ({request.totalDays} gün)</p>
         {request.reason && <p><b>Açıklama:</b> {request.reason}</p>}
+        {request.attachments?.length > 0 && (
+          <div>
+            <b>Ekler:</b>
+            <div className="mt-1 flex flex-wrap gap-2">
+              {request.attachments.map((at) => (
+                <button key={at.id} className="btn-secondary !py-1 !text-xs"
+                  onClick={() => downloadFile(leaveApi.attachmentUrl(at.id), at.fileName)}>
+                  <Paperclip size={13} /> {at.fileName}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
       <div className="mt-4">
         <Field label="Amir Notu (opsiyonel)"><textarea className="input" rows={2} value={comment} onChange={(e) => setComment(e.target.value)} /></Field>
@@ -126,7 +140,7 @@ function AllTab() {
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-50"><tr>
               <th className="th">Personel</th><th className="th">Tür</th><th className="th">Tarih</th>
-              <th className="th">Gün</th><th className="th">Durum</th><th className="th">Amir</th>
+              <th className="th">Gün</th><th className="th">Durum</th><th className="th">Amir</th><th className="th text-right">Belge</th>
             </tr></thead>
             <tbody className="divide-y divide-slate-100">
               {list.data!.map((r) => (
@@ -137,6 +151,14 @@ function AllTab() {
                   <td className="td">{r.totalDays}</td>
                   <td className="td"><StatusBadge status={r.status} /></td>
                   <td className="td">{r.approverName || '-'}</td>
+                  <td className="td text-right">
+                    {r.status === 'Approved' && (
+                      <button className="btn-secondary !py-1 !text-xs" title="İzin belgesi (Word)"
+                        onClick={() => downloadFile(leaveApi.documentUrl(r.id), `izin-belgesi-${r.id}.docx`)}>
+                        <FileText size={14} /> Word
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

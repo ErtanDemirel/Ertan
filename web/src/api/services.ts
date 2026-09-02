@@ -1,9 +1,26 @@
 import { api } from './client';
 import type {
-  Announcement, AnnouncementReadStat, Attendance, AuthResponse, LeaveBalance,
-  LeaveRequest, LeaveType, MealMenu, Paged, Personnel, QrPayload, ServiceRoute,
-  Shift, WorkLocation,
+  Announcement, AnnouncementReadStat, Attendance, AuthResponse, JobApplication,
+  LeaveBalance, LeaveRequest, LeaveType, MealMenu, Paged, Payslip, Personnel,
+  QrPayload, ServiceAnalytics, ServiceRoute, Shift, WorkLocation,
 } from './types';
+
+/** Yetki başlıklı dosya indirir ve tarayıcıda kaydettirir. */
+export async function downloadFile(url: string, suggestedName?: string) {
+  const res = await api.get(url, { responseType: 'blob' });
+  const disposition = res.headers['content-disposition'] as string | undefined;
+  let name = suggestedName || 'dosya';
+  const m = disposition?.match(/filename\*?=(?:UTF-8'')?"?([^\";]+)"?/i);
+  if (m) name = decodeURIComponent(m[1]);
+  const blobUrl = URL.createObjectURL(res.data as Blob);
+  const a = document.createElement('a');
+  a.href = blobUrl;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(blobUrl);
+}
 
 // ---------------- Auth ----------------
 export const authApi = {
@@ -44,6 +61,8 @@ export const routeApi = {
   update: (id: number, b: unknown) =>
     api.put<ServiceRoute>(`/api/service-routes/${id}`, b).then((r) => r.data),
   remove: (id: number) => api.delete(`/api/service-routes/${id}`).then((r) => r.data),
+  analytics: (shiftId?: number) =>
+    api.get<ServiceAnalytics>('/api/service-routes/analytics', { params: { shiftId } }).then((r) => r.data),
 };
 
 // ---------------- Shifts ----------------
@@ -77,6 +96,53 @@ export const leaveApi = {
   decide: (id: number, approve: boolean, comment?: string) =>
     api.post(`/api/leave/requests/${id}/decide`, { approve, comment }).then((r) => r.data),
   cancel: (id: number) => api.post(`/api/leave/requests/${id}/cancel`).then((r) => r.data),
+  uploadAttachment: (id: number, file: File) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return api.post(`/api/leave/requests/${id}/attachments`, fd).then((r) => r.data);
+  },
+  attachmentUrl: (attachmentId: number) => `/api/leave/attachments/${attachmentId}`,
+  documentUrl: (id: number) => `/api/leave/requests/${id}/document`,
+};
+
+// ---------------- Bordro ----------------
+export const payrollApi = {
+  list: (params: { personnelId?: number; year?: number } = {}) =>
+    api.get<Payslip[]>('/api/payroll', { params }).then((r) => r.data),
+  my: () => api.get<Payslip[]>('/api/payroll/my').then((r) => r.data),
+  upload: (data: { personnelId: number; year: number; month: number; netAmount?: number; note?: string; file: File }) => {
+    const fd = new FormData();
+    fd.append('personnelId', String(data.personnelId));
+    fd.append('year', String(data.year));
+    fd.append('month', String(data.month));
+    if (data.netAmount != null) fd.append('netAmount', String(data.netAmount));
+    if (data.note) fd.append('note', data.note);
+    fd.append('file', data.file);
+    return api.post<Payslip>('/api/payroll', fd).then((r) => r.data);
+  },
+  fileUrl: (id: number) => `/api/payroll/${id}/file`,
+  remove: (id: number) => api.delete(`/api/payroll/${id}`).then((r) => r.data),
+};
+
+// ---------------- Aday / İş Başvurusu ----------------
+export const applicationApi = {
+  submit: (b: unknown) => api.post<{ id: number }>('/api/applications', b).then((r) => r.data),
+  uploadCv: (id: number, file: File) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return api.post(`/api/applications/${id}/cv`, fd).then((r) => r.data);
+  },
+  list: (status?: string) =>
+    api.get<JobApplication[]>('/api/applications', { params: { status } }).then((r) => r.data),
+  get: (id: number) => api.get<JobApplication>(`/api/applications/${id}`).then((r) => r.data),
+  updateStatus: (id: number, status: string, reviewNote?: string) =>
+    api.put(`/api/applications/${id}/status`, { status, reviewNote }).then((r) => r.data),
+  cvUrl: (id: number) => `/api/applications/${id}/cv`,
+};
+
+// ---------------- Self-servis ----------------
+export const selfApi = {
+  service: () => api.get<{ mine: any; routes: any[] }>('/api/me/service').then((r) => r.data),
 };
 
 // ---------------- Announcements ----------------

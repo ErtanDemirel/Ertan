@@ -20,6 +20,25 @@ public class PasswordResetCode
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
+/// <summary>Güvenlik/denetim kaydı (kritik işlemler için iz).</summary>
+public class AuditLog
+{
+    public int Id { get; set; }
+
+    public int? UserId { get; set; }
+
+    [MaxLength(80)]
+    public string Action { get; set; } = string.Empty;
+
+    [MaxLength(400)]
+    public string? Detail { get; set; }
+
+    [MaxLength(60)]
+    public string? IpAddress { get; set; }
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
 /// <summary>Uzun ömürlü oturum için yenileme jetonu.</summary>
 public class RefreshToken
 {

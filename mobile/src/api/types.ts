@@ -35,6 +35,14 @@ export interface LeaveBalance {
   remainingDays: number;
 }
 
+export interface LeaveAttachment {
+  id: number;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  uploadedAt: string;
+}
+
 export interface LeaveRequest {
   id: number;
   personnelName: string;
@@ -43,10 +51,23 @@ export interface LeaveRequest {
   startDate: string;
   endDate: string;
   totalDays: number;
+  title?: string | null;
   reason?: string | null;
   status: LeaveStatus;
   managerComment?: string | null;
   requestedAt: string;
+  attachments: LeaveAttachment[];
+}
+
+export interface Payslip {
+  id: number;
+  year: number;
+  month: number;
+  fileName: string;
+  sizeBytes: number;
+  netAmount?: number | null;
+  note?: string | null;
+  uploadedAt: string;
 }
 
 export interface Announcement {

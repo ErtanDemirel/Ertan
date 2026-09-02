@@ -29,6 +29,9 @@ public class ServiceRoute
     [MaxLength(20)]
     public string? PlateNumber { get; set; }
 
+    /// <summary>Bir servis aracının kapasitesi (gerekli servis sayısı hesabı için).</summary>
+    public int Capacity { get; set; } = 27;
+
     public bool IsActive { get; set; } = true;
 
     public ICollection<Personnel> Personnel { get; set; } = new List<Personnel>();

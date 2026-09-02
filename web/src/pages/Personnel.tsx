@@ -10,7 +10,7 @@ import { useAuth } from '../auth/AuthContext';
 const emptyForm = {
   sicilNo: '', firstName: '', lastName: '', nationalId: '', department: '',
   title: '', phoneNumber: '', email: '', hireDate: '', managerId: '', serviceRouteId: '',
-  shiftId: '', annualLeaveDays: '14', isActive: true,
+  serviceStop: '', shiftId: '', exitDate: '', exitReason: '', annualLeaveDays: '14', isActive: true,
   createLoginAccount: false, username: '', initialPassword: '',
 };
 
@@ -72,7 +72,10 @@ export default function PersonnelPage() {
       nationalId: p.nationalId || '', department: p.department || '', title: p.title || '',
       phoneNumber: p.phoneNumber || '', email: p.email || '', hireDate: p.hireDate?.slice(0, 10) || '',
       managerId: p.managerId?.toString() || '', serviceRouteId: p.serviceRouteId?.toString() || '',
-      shiftId: p.shiftId?.toString() || '', isActive: p.isActive,
+      serviceStop: p.serviceStop || '',
+      shiftId: p.shiftId?.toString() || '',
+      exitDate: p.exitDate?.slice(0, 10) || '', exitReason: p.exitReason || '',
+      isActive: p.isActive,
     });
     setModalOpen(true);
   }
@@ -86,10 +89,14 @@ export default function PersonnelPage() {
       hireDate: form.hireDate || null,
       managerId: form.managerId ? Number(form.managerId) : null,
       serviceRouteId: form.serviceRouteId ? Number(form.serviceRouteId) : null,
+      serviceStop: form.serviceStop || null,
       shiftId: form.shiftId ? Number(form.shiftId) : null,
     };
     if (editing) {
-      save.mutate({ ...base, isActive: form.isActive });
+      save.mutate({
+        ...base, isActive: form.isActive,
+        exitDate: form.exitDate || null, exitReason: form.exitReason || null,
+      });
     } else {
       save.mutate({
         ...base,
@@ -257,6 +264,14 @@ export default function PersonnelPage() {
               {routes.data?.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
             </select>
           </Field>
+          <Field label="Bindiği Durak" hint="Servis analizi için"><input className="input" value={form.serviceStop} onChange={(e) => set('serviceStop', e.target.value)} /></Field>
+
+          {editing && (
+            <>
+              <Field label="İşten Çıkış Tarihi" hint="Boşsa halen çalışıyor"><input type="date" className="input" value={form.exitDate} onChange={(e) => set('exitDate', e.target.value)} /></Field>
+              <Field label="Çıkış Nedeni"><input className="input" value={form.exitReason} onChange={(e) => set('exitReason', e.target.value)} /></Field>
+            </>
+          )}
 
           {!editing && (
             <Field label="Yıllık İzin Hakkı (gün)"><input type="number" className="input" value={form.annualLeaveDays} onChange={(e) => set('annualLeaveDays', e.target.value)} /></Field>

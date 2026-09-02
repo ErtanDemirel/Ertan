@@ -9,12 +9,12 @@ public record PagedResult<T>(IReadOnlyList<T> Items, int Total, int Page, int Pa
 public record ServiceRouteDto(
     int Id, string Name, string? Description, string? Stops,
     string? DepartureTime, string? ReturnTime, string? DriverName,
-    string? PlateNumber, bool IsActive, int PersonnelCount);
+    string? PlateNumber, int Capacity, bool IsActive, int PersonnelCount);
 
 public record ServiceRouteRequest(
     [property: Required] string Name, string? Description, string? Stops,
     string? DepartureTime, string? ReturnTime, string? DriverName,
-    string? PlateNumber, bool IsActive);
+    string? PlateNumber, int Capacity, bool IsActive);
 
 // ---- Vardiya ----
 public record ShiftDto(

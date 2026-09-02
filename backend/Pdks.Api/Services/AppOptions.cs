@@ -19,7 +19,7 @@ public class SmsOptions
     public string ApiUrl { get; set; } = string.Empty;
     public string Username { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
-    public string Sender { get; set; } = "PDKS";
+    public string Sender { get; set; } = "COKOSIS";
 }
 
 public class OtpOptions

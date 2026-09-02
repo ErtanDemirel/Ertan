@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { QRCodeSVG } from 'qrcode.react';
 import { Plus, Pencil, Trash2, MapPin, QrCode, LocateFixed } from 'lucide-react';
@@ -107,14 +107,7 @@ function KioskQr({ location, onClose }: { location: WorkLocation; onClose: () =>
   const qr = useQuery({
     queryKey: ['qr', location.id],
     queryFn: () => attendanceApi.qr(location.id),
-    refetchInterval: 5000, // QR kod düzenli yenilensin
   });
-  const [countdown, setCountdown] = useState(30);
-  useEffect(() => {
-    if (qr.data) setCountdown(qr.data.secondsRemaining);
-    const t = setInterval(() => setCountdown((c) => (c > 0 ? c - 1 : 0)), 1000);
-    return () => clearInterval(t);
-  }, [qr.data]);
 
   return (
     <Modal open onClose={onClose} title={`Kiosk QR — ${location.name}`}>
@@ -124,8 +117,8 @@ function KioskQr({ location, onClose }: { location: WorkLocation; onClose: () =>
             <div className="rounded-2xl bg-white p-4 shadow-inner ring-1 ring-slate-200">
               <QRCodeSVG value={qr.data.qrContent} size={240} level="M" />
             </div>
-            <p className="text-sm text-slate-500">Personel bu kodu mobil uygulamadan okutarak giriş/çıkış yapar.</p>
-            <p className="text-xs text-slate-400">Kod {countdown} sn sonra yenilenecek</p>
+            <p className="text-sm text-slate-500">Bu QR sabittir; bir kez yazdırıp iş yerine asabilirsiniz. Personel mobil uygulamadan okutarak giriş/çıkış yapar (konum doğrulamalı).</p>
+            <p className="text-xs text-slate-400">Sızıntı şüphesinde "QR anahtarını yenile" ile kodu geçersiz kılabilirsiniz.</p>
           </>
         )}
       </div>

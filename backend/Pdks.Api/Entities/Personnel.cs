@@ -35,6 +35,12 @@ public class Personnel
 
     public DateTime? HireDate { get; set; }
 
+    /// <summary>İşten çıkış tarihi (boşsa halen çalışıyor). Aday eşleştirmede kullanılır.</summary>
+    public DateTime? ExitDate { get; set; }
+
+    [MaxLength(200)]
+    public string? ExitReason { get; set; }
+
     /// <summary>Bağlı olduğu amir (izin onayı bu kişiye gider).</summary>
     public int? ManagerId { get; set; }
     public Personnel? Manager { get; set; }
@@ -42,6 +48,10 @@ public class Personnel
     /// <summary>Servis güzergahı.</summary>
     public int? ServiceRouteId { get; set; }
     public ServiceRoute? ServiceRoute { get; set; }
+
+    /// <summary>Bindiği durak (servis analizi için).</summary>
+    [MaxLength(80)]
+    public string? ServiceStop { get; set; }
 
     /// <summary>Varsayılan vardiya.</summary>
     public int? ShiftId { get; set; }

@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, RefreshControl,
 } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import * as DocumentPicker from 'expo-document-picker';
 import { leaveApi } from '../api/services';
 import { apiError } from '../api/client';
 import { colors } from '../theme';
@@ -19,23 +20,47 @@ export default function LeaveScreen() {
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [typeId, setTypeId] = useState<number | null>(null);
+  const [title, setTitle] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [days, setDays] = useState('');
   const [reason, setReason] = useState('');
+  const [file, setFile] = useState<{ uri: string; name: string; type: string } | null>(null);
 
   const types = useQuery({ queryKey: ['leave-types'], queryFn: () => leaveApi.types() });
   const mine = useQuery({ queryKey: ['leave-my'], queryFn: () => leaveApi.my() });
 
   const create = useMutation({
-    mutationFn: () => leaveApi.create(typeId!, startDate, endDate, reason || undefined),
+    mutationFn: async () => {
+      const created = await leaveApi.create({
+        leaveTypeId: typeId!,
+        startDate, endDate,
+        title: title || undefined,
+        reason: reason || undefined,
+        days: days ? Number(days) : undefined,
+      });
+      if (file) await leaveApi.uploadAttachment(created.id, file);
+      return created;
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['leave-my'] });
       setShowForm(false);
-      setTypeId(null); setStartDate(''); setEndDate(''); setReason('');
+      setTypeId(null); setTitle(''); setStartDate(''); setEndDate(''); setDays(''); setReason(''); setFile(null);
       Alert.alert('Gönderildi', 'İzin talebiniz amirinize iletildi.');
     },
     onError: (e) => Alert.alert('Hata', apiError(e)),
   });
+
+  async function pickFile() {
+    const res = await DocumentPicker.getDocumentAsync({
+      type: ['application/pdf', 'image/*'],
+      copyToCacheDirectory: true,
+    });
+    if (!res.canceled && res.assets?.[0]) {
+      const a = res.assets[0];
+      setFile({ uri: a.uri, name: a.name ?? 'dosya', type: a.mimeType ?? 'application/octet-stream' });
+    }
+  }
 
   const cancel = useMutation({
     mutationFn: (id: number) => leaveApi.cancel(id),
@@ -91,12 +116,20 @@ export default function LeaveScreen() {
             ))}
           </View>
 
+          <Text style={styles.label}>Talep Başlığı</Text>
+          <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="örn. Yıllık izin talebi" placeholderTextColor={colors.muted} />
           <Text style={styles.label}>Başlangıç (YYYY-AA-GG)</Text>
           <TextInput style={styles.input} value={startDate} onChangeText={setStartDate} placeholder="2026-09-10" placeholderTextColor={colors.muted} />
           <Text style={styles.label}>Bitiş (YYYY-AA-GG)</Text>
           <TextInput style={styles.input} value={endDate} onChangeText={setEndDate} placeholder="2026-09-12" placeholderTextColor={colors.muted} />
+          <Text style={styles.label}>Kullanılan Gün (boşsa otomatik hesaplanır)</Text>
+          <TextInput style={styles.input} value={days} onChangeText={setDays} keyboardType="number-pad" placeholder="örn. 3" placeholderTextColor={colors.muted} />
           <Text style={styles.label}>Açıklama</Text>
           <TextInput style={[styles.input, { height: 70 }]} value={reason} onChangeText={setReason} multiline placeholder="Neden..." placeholderTextColor={colors.muted} />
+
+          <TouchableOpacity style={styles.fileBtn} onPress={pickFile}>
+            <Text style={styles.fileBtnText}>{file ? `📎 ${file.name}` : '📎 Dosya ekle (rapor/foto/PDF)'}</Text>
+          </TouchableOpacity>
 
           <TouchableOpacity style={styles.submit} onPress={submit} disabled={create.isPending}>
             <Text style={styles.submitText}>{create.isPending ? 'Gönderiliyor...' : 'Talebi Gönder'}</Text>
@@ -113,8 +146,8 @@ export default function LeaveScreen() {
           return (
             <View key={r.id} style={styles.reqCard}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.reqType}>{r.leaveTypeName}</Text>
-                <Text style={styles.reqDate}>{r.startDate} → {r.endDate} ({r.totalDays} gün)</Text>
+                <Text style={styles.reqType}>{r.title || r.leaveTypeName}</Text>
+                <Text style={styles.reqDate}>{r.leaveTypeName} • {r.startDate} → {r.endDate} ({r.totalDays} gün)</Text>
                 {r.managerComment ? <Text style={styles.reqComment}>Amir: {r.managerComment}</Text> : null}
               </View>
               <View style={{ alignItems: 'flex-end' }}>
@@ -151,6 +184,8 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { color: colors.muted, fontSize: 13 },
   chipTextActive: { color: '#fff', fontWeight: '600' },
+  fileBtn: { borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed', borderRadius: 10, padding: 12, alignItems: 'center', marginTop: 12 },
+  fileBtnText: { color: colors.muted, fontSize: 13 },
   submit: { backgroundColor: colors.primary, borderRadius: 10, padding: 14, alignItems: 'center', marginTop: 16 },
   submitText: { color: '#fff', fontWeight: '700' },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginTop: 22, marginBottom: 10 },

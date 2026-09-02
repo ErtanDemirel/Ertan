@@ -25,53 +25,30 @@ public static class GeoService
 }
 
 /// <summary>
-/// Zamana bağlı (TOTP benzeri) QR kod üretimi. Kiosk ekranında gösterilen kod
-/// her <see cref="StepSeconds"/> saniyede değişir; ekran görüntüsüyle paylaşımı
-/// engeller. Konum (geofence) kontrolüyle birlikte "evden giriş" imkânsızdır.
+/// Lokasyona özel SABİT QR kod üretimi. Her lokasyonun gizli anahtarıyla imzalanır;
+/// bir kez üretilip yazdırılır/asılır. Güvenlik konumla (geofence) sağlanır:
+/// kod paylaşılsa bile iş yeri yarıçapı dışından giriş reddedilir. Sızıntı şüphesinde
+/// anahtar yenilenerek (rotate-secret) tüm eski kodlar geçersiz kılınabilir.
 /// </summary>
 public class QrTokenService
 {
-    public const int StepSeconds = 30;
-    private const int CodeDigits = 8;
-
-    /// <summary>Verilen lokasyon ve zaman adımı için kod üretir.</summary>
-    public string Generate(WorkLocation location, long? step = null)
+    /// <summary>Lokasyon için sabit imzalı kodu üretir (base32-benzeri hex, 16 hane).</summary>
+    public string Generate(WorkLocation location)
     {
-        step ??= CurrentStep();
         var secret = Encoding.UTF8.GetBytes(location.QrSecret);
-        var msg = Encoding.UTF8.GetBytes($"{location.Id}:{step}");
+        var msg = Encoding.UTF8.GetBytes($"COKO-SIS:{location.Id}");
         using var hmac = new HMACSHA256(secret);
         var hash = hmac.ComputeHash(msg);
-        // Dinamik truncation (RFC 4226 benzeri)
-        int offset = hash[^1] & 0x0F;
-        int binary = ((hash[offset] & 0x7F) << 24)
-                     | ((hash[offset + 1] & 0xFF) << 16)
-                     | ((hash[offset + 2] & 0xFF) << 8)
-                     | (hash[offset + 3] & 0xFF);
-        int mod = (int)Math.Pow(10, CodeDigits);
-        return (binary % mod).ToString().PadLeft(CodeDigits, '0');
+        // İlk 8 baytı büyük harf hex olarak kullan → 16 karakterlik sabit kod.
+        return Convert.ToHexString(hash, 0, 8);
     }
 
-    /// <summary>Kodu geçerli zaman penceresi içinde doğrular (saat kaymasına toleranslı).</summary>
-    public bool Validate(WorkLocation location, string code, int windowSteps = 1)
+    /// <summary>Okutulan kodun lokasyona ait geçerli imza olup olmadığını doğrular.</summary>
+    public bool Validate(WorkLocation location, string code)
     {
-        var now = CurrentStep();
-        for (long s = now - windowSteps; s <= now + windowSteps; s++)
-        {
-            var expected = Generate(location, s);
-            if (CryptographicOperations.FixedTimeEquals(
-                    Encoding.UTF8.GetBytes(expected), Encoding.UTF8.GetBytes(code)))
-                return true;
-        }
-        return false;
+        var expected = Generate(location);
+        return CryptographicOperations.FixedTimeEquals(
+            Encoding.UTF8.GetBytes(expected),
+            Encoding.UTF8.GetBytes(code?.Trim().ToUpperInvariant() ?? string.Empty));
     }
-
-    public int SecondsRemaining()
-    {
-        long unix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        return (int)(StepSeconds - unix % StepSeconds);
-    }
-
-    private static long CurrentStep() =>
-        DateTimeOffset.UtcNow.ToUnixTimeSeconds() / StepSeconds;
 }

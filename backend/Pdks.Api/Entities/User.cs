@@ -30,6 +30,12 @@ public class User
 
     public bool IsActive { get; set; } = true;
 
+    /// <summary>Ardışık hatalı giriş sayısı (hesap kilidi için).</summary>
+    public int FailedLoginCount { get; set; }
+
+    /// <summary>Bu tarihe kadar hesap kilitli (brute-force koruması).</summary>
+    public DateTime? LockoutEnd { get; set; }
+
     /// <summary>İlişkili personel kaydı (varsa).</summary>
     public int? PersonnelId { get; set; }
     public Personnel? Personnel { get; set; }

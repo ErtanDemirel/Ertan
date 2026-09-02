@@ -40,8 +40,11 @@ export interface Personnel {
   managerName?: string | null;
   serviceRouteId?: number | null;
   serviceRouteName?: string | null;
+  serviceStop?: string | null;
   shiftId?: number | null;
   shiftName?: string | null;
+  exitDate?: string | null;
+  exitReason?: string | null;
   isActive: boolean;
 }
 
@@ -54,6 +57,7 @@ export interface ServiceRoute {
   returnTime?: string | null;
   driverName?: string | null;
   plateNumber?: string | null;
+  capacity: number;
   isActive: boolean;
   personnelCount: number;
 }
@@ -90,6 +94,14 @@ export interface LeaveBalance {
 
 export type LeaveStatus = 'Pending' | 'Approved' | 'Rejected' | 'Cancelled';
 
+export interface LeaveAttachment {
+  id: number;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  uploadedAt: string;
+}
+
 export interface LeaveRequest {
   id: number;
   personnelId: number;
@@ -101,6 +113,7 @@ export interface LeaveRequest {
   startDate: string;
   endDate: string;
   totalDays: number;
+  title?: string | null;
   reason?: string | null;
   status: LeaveStatus;
   approverId?: number | null;
@@ -108,6 +121,7 @@ export interface LeaveRequest {
   managerComment?: string | null;
   requestedAt: string;
   decidedAt?: string | null;
+  attachments: LeaveAttachment[];
 }
 
 export interface Announcement {
@@ -157,7 +171,74 @@ export interface QrPayload {
   locationName: string;
   code: string;
   qrContent: string;
-  secondsRemaining: number;
+}
+
+export interface Payslip {
+  id: number;
+  personnelId: number;
+  personnelName: string;
+  sicilNo: string;
+  year: number;
+  month: number;
+  fileName: string;
+  sizeBytes: number;
+  netAmount?: number | null;
+  note?: string | null;
+  uploadedAt: string;
+}
+
+export interface PriorEmployment {
+  workedBefore: boolean;
+  personnelId?: number | null;
+  name?: string | null;
+  sicilNo?: string | null;
+  hireDate?: string | null;
+  exitDate?: string | null;
+  currentlyEmployed: boolean;
+  totalMonths?: number | null;
+  exitReason?: string | null;
+}
+
+export interface JobApplication {
+  id: number;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  nationalId?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  birthDate?: string | null;
+  address?: string | null;
+  position?: string | null;
+  education?: string | null;
+  experienceYears?: number | null;
+  previousWorkplace?: string | null;
+  notes?: string | null;
+  status: string;
+  reviewNote?: string | null;
+  hasCv: boolean;
+  createdAt: string;
+  priorEmployment?: PriorEmployment | null;
+}
+
+export interface ServiceStopStat {
+  stop: string;
+  personnelCount: number;
+}
+export interface ServiceRouteAnalytics {
+  routeId: number;
+  routeName: string;
+  capacity: number;
+  personnelCount: number;
+  servicesNeeded: number;
+  stops: ServiceStopStat[];
+}
+export interface ServiceAnalytics {
+  shiftId?: number | null;
+  shiftName?: string | null;
+  totalPersonnel: number;
+  totalServicesNeeded: number;
+  routes: ServiceRouteAnalytics[];
 }
 
 export interface Attendance {

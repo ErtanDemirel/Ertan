@@ -22,7 +22,7 @@ public class AttendanceController : ControllerBase
         _db = db; _qr = qr; _log = log;
     }
 
-    /// <summary>Kiosk ekranı için dönen QR kodu (her 30 sn'de yenilenir).</summary>
+    /// <summary>Kiosk ekranı / yazdırma için lokasyonun SABİT QR kodu.</summary>
     [HttpGet("qr/{locationId:int}")]
     [Authorize(Roles = "Admin,Manager")]
     public async Task<ActionResult<QrPayloadDto>> GetQr(int locationId, CancellationToken ct)
@@ -31,8 +31,8 @@ public class AttendanceController : ControllerBase
         if (loc is null) return NotFound(new { message = "Lokasyon bulunamadı." });
 
         var code = _qr.Generate(loc);
-        var content = $"PDKS|{loc.Id}|{code}";
-        return Ok(new QrPayloadDto(loc.Id, loc.Name, code, content, _qr.SecondsRemaining()));
+        var content = $"COKO|{loc.Id}|{code}";
+        return Ok(new QrPayloadDto(loc.Id, loc.Name, code, content));
     }
 
     /// <summary>
@@ -46,17 +46,17 @@ public class AttendanceController : ControllerBase
         if (pid is null)
             return BadRequest(new { message = "Bu hesap bir personel kaydına bağlı değil." });
 
-        // QR içeriği: PDKS|{locationId}|{code}
+        // QR içeriği: COKO|{locationId}|{code}
         var parts = req.QrContent.Split('|');
-        if (parts.Length != 3 || parts[0] != "PDKS" || !int.TryParse(parts[1], out var locId))
+        if (parts.Length != 3 || parts[0] != "COKO" || !int.TryParse(parts[1], out var locId))
             return BadRequest(new { message = "Geçersiz QR kod." });
 
         var loc = await _db.WorkLocations.FirstOrDefaultAsync(l => l.Id == locId && l.IsActive, ct);
         if (loc is null) return BadRequest(new { message = "QR koda ait lokasyon bulunamadı." });
 
-        // 1) QR kod zaman doğrulaması (ekran görüntüsü paylaşımını engeller)
+        // 1) QR imza doğrulaması (koda ait lokasyon gerçekten bu mu?)
         if (!_qr.Validate(loc, parts[2]))
-            return BadRequest(new { message = "QR kodun süresi doldu. Ekrandaki güncel kodu okutun." });
+            return BadRequest(new { message = "Geçersiz QR kod. Lütfen iş yerindeki güncel kodu okutun." });
 
         // 2) Geofence (konum) doğrulaması
         var distance = GeoService.DistanceMeters(req.Latitude, req.Longitude, loc.Latitude, loc.Longitude);

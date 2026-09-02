@@ -15,10 +15,13 @@ public class LeaveController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly LeaveService _leave;
+    private readonly FileStorageService _files;
+    private readonly LeaveDocumentService _docs;
 
-    public LeaveController(AppDbContext db, LeaveService leave)
+    public LeaveController(AppDbContext db, LeaveService leave,
+        FileStorageService files, LeaveDocumentService docs)
     {
-        _db = db; _leave = leave;
+        _db = db; _leave = leave; _files = files; _docs = docs;
     }
 
     // ---------- İzin Türleri ----------
@@ -155,7 +158,7 @@ public class LeaveController : ControllerBase
         try
         {
             var created = await _leave.CreateAsync(pid.Value, req.LeaveTypeId,
-                req.StartDate, req.EndDate, req.Reason, ct);
+                req.StartDate, req.EndDate, req.Title, req.Reason, req.Days, ct);
             var dto = (await LoadRequestsAsync(_db.LeaveRequests.Where(r => r.Id == created.Id), ct))
                 .First();
             return Ok(dto);
@@ -210,12 +213,84 @@ public class LeaveController : ControllerBase
         }
     }
 
+    // ---------- Ek dosyalar (rapor/foto/pdf) ----------
+
+    /// <summary>İzin talebine dosya ekler (talep sahibi veya amir/admin).</summary>
+    [HttpPost("requests/{id:int}/attachments")]
+    [RequestSizeLimit(15 * 1024 * 1024)]
+    public async Task<IActionResult> Upload(int id, IFormFile file, CancellationToken ct)
+    {
+        var request = await _db.LeaveRequests.FirstOrDefaultAsync(r => r.Id == id, ct);
+        if (request is null) return NotFound();
+        if (!CanAccessRequest(request)) return Forbid();
+
+        try
+        {
+            var info = await _files.SaveAsync(file, "leave", ct);
+            var att = new LeaveAttachment
+            {
+                LeaveRequestId = id,
+                FileName = info.FileName,
+                StoredPath = info.StoredPath,
+                ContentType = info.ContentType,
+                SizeBytes = info.SizeBytes
+            };
+            _db.LeaveAttachments.Add(att);
+            await _db.SaveChangesAsync(ct);
+            return Ok(new LeaveAttachmentDto(att.Id, att.FileName, att.ContentType, att.SizeBytes, att.UploadedAt));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>Ekli dosyayı indirir (talep sahibi veya amir/admin).</summary>
+    [HttpGet("attachments/{attachmentId:int}")]
+    public async Task<IActionResult> Download(int attachmentId, CancellationToken ct)
+    {
+        var att = await _db.LeaveAttachments.Include(a => a.LeaveRequest)
+            .FirstOrDefaultAsync(a => a.Id == attachmentId, ct);
+        if (att is null || att.LeaveRequest is null) return NotFound();
+        if (!CanAccessRequest(att.LeaveRequest)) return Forbid();
+
+        var (stream, contentType) = _files.Open(att.StoredPath, att.ContentType);
+        return File(stream, contentType, att.FileName);
+    }
+
+    /// <summary>İzin talebinden otomatik doldurulmuş Word izin belgesi üretir (amir/admin).</summary>
+    [HttpGet("requests/{id:int}/document")]
+    [Authorize(Roles = "Admin,Manager")]
+    public async Task<IActionResult> Document(int id, CancellationToken ct)
+    {
+        var request = await _db.LeaveRequests
+            .Include(r => r.Personnel).Include(r => r.LeaveType).Include(r => r.Approver)
+            .FirstOrDefaultAsync(r => r.Id == id, ct);
+        if (request?.Personnel is null || request.LeaveType is null) return NotFound();
+        if (!_docs.TemplateExists)
+            return BadRequest(new { message = "İzin belgesi şablonu sunucuda bulunamadı." });
+
+        var approverName = request.Approver is null ? null
+            : $"{request.Approver.FirstName} {request.Approver.LastName}";
+        var bytes = _docs.Generate(request, request.Personnel, request.LeaveType, approverName);
+        var fileName = $"izin-belgesi-{request.Personnel.SicilNo}-{request.Id}.docx";
+        return File(bytes, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", fileName);
+    }
+
     // ---- helpers ----
+    private bool CanAccessRequest(LeaveRequest r)
+    {
+        if (User.IsManagerOrAdmin()) return true;
+        var pid = User.GetPersonnelId();
+        return pid is not null && r.PersonnelId == pid;
+    }
+
     // Not: enum.ToString() SQL'e güvenilir çevrilmediğinden entity'ler belleğe alınıp map'lenir.
     private async Task<List<LeaveRequestDto>> LoadRequestsAsync(IQueryable<LeaveRequest> q, CancellationToken ct)
     {
         var rows = await q
             .Include(r => r.Personnel).Include(r => r.LeaveType).Include(r => r.Approver)
+            .Include(r => r.Attachments)
             .AsNoTracking().ToListAsync(ct);
         return rows.Select(MapRequest).ToList();
     }
@@ -225,8 +300,10 @@ public class LeaveController : ControllerBase
         r.Personnel is null ? "" : r.Personnel.FirstName + " " + r.Personnel.LastName,
         r.Personnel?.SicilNo ?? "",
         r.LeaveTypeId, r.LeaveType?.Name ?? "", r.LeaveType?.DeductsFromAnnual ?? false,
-        r.StartDate, r.EndDate, r.TotalDays, r.Reason, r.Status.ToString(),
+        r.StartDate, r.EndDate, r.TotalDays, r.Title, r.Reason, r.Status.ToString(),
         r.ApproverId,
         r.Approver == null ? null : r.Approver.FirstName + " " + r.Approver.LastName,
-        r.ManagerComment, r.RequestedAt, r.DecidedAt);
+        r.ManagerComment, r.RequestedAt, r.DecidedAt,
+        r.Attachments.Select(a => new LeaveAttachmentDto(a.Id, a.FileName, a.ContentType, a.SizeBytes, a.UploadedAt))
+            .ToList());
 }

@@ -1,7 +1,10 @@
-# PDKS — Personel Devam Kontrol Sistemi
+# COKO-SİS — Personel Devam Kontrol Sistemi
 
 Tam kapsamlı bir **PDKS** çözümü: ASP.NET Core Web API (SQL Server) arka uç, React + Tailwind
 yönetim paneli ve Expo/React Native mobil uygulama.
+
+> **Not:** Kullanıcıya görünen tüm adlar **COKO-SİS**'tir. Kod içindeki teknik ad alanı
+> (`Pdks.Api`) geriye dönük uyumluluk için korunmuştur.
 
 ```
 ┌────────────────────┐     ┌────────────────────┐     ┌────────────────────┐
@@ -48,6 +51,18 @@ yönetim paneli ve Expo/React Native mobil uygulama.
 | Duyurular + zorunlu "Okudum" (basmadan çıkamama) | `AnnouncementController` + mobil `MandatoryGate` (kapatılamayan modal) |
 | Yemek listesi (yetkili girer, personel görür) | `MealController`, web `Meals`, mobil `MealsScreen` |
 | Konuma bağlı QR ile mesai giriş/çıkış (evden giriş engeli) | `AttendanceController.Check` — **geofence (Haversine)** + **zamana bağlı QR (TOTP benzeri)** |
+
+### v2 ile eklenen modüller
+
+| Modül | Açıklama |
+|-------|----------|
+| **Sabit QR** | QR artık her seferinde değişmez; lokasyona özel **tek sefer üretilip yazdırılan** imzalı kod. Güvenlik konum (geofence) + gerektiğinde anahtar yenileme ile sağlanır. |
+| **Bordro dağıtımı** | İK, personel/dönem bazında bordro PDF yükler; personel web/mobil'den **kendi bordrosunu** görüp indirir (`PayrollController`, web `Bordro`, mobil `Bordro`). |
+| **Gelişmiş izin talebi** | Başlık, tür, tarih, **kullanılan gün** ve **dosya eki** (rapor/foto/PDF). Onaylı izinler için **otomatik dolan Word izin belgesi** üretilir (`Templates/izin_belgesi_template.docx`, yer tutucuları kendi belgenizle değiştirin). |
+| **Personel self-servis (web)** | Personel de web'e girip izin talebi açar, duyuru/yemek/bordro/servis bilgisini görür (`/me/*`). |
+| **İş başvurusu + Aday yönetimi** | Kamuya açık başvuru formu (`/basvuru`), İK aday listesi/detayı; **TCKN ile geçmiş çalışan eşleştirmesi** (daha önce çalıştı mı, ne kadar, çıkış yaptı mı). |
+| **Servis analizi** | Vardiya bazlı: güzergah başına kişi sayısı, kapasiteye göre **gerekli servis sayısı**, **durak bazında** kişi dağılımı. |
+| **Güvenlik sertleştirmesi** | Hesap kilidi (brute-force), giriş uçlarında rate limiting, şifre politikası, güvenlik başlıkları, denetim kaydı (audit log), yapılandırılabilir CORS, güvenli dosya yükleme (tür/boyut doğrulama, webroot dışında saklama). |
 
 ### Eklediğim "olmazsa olmaz" güvenlik/işlevsellik
 
@@ -126,7 +141,7 @@ npx expo start
 ## QR + Konumlu Mesai Akışı
 
 1. Yönetici, **Lokasyon & QR** ekranından iş yeri koordinatı ve yarıçapını tanımlar.
-2. İş yerindeki bir ekran (kiosk) `Kiosk QR Göster` ile **her 30 sn'de yenilenen** QR'ı gösterir.
+2. `Kiosk QR Göster` ile lokasyona özel **sabit** QR üretilir; bir kez yazdırıp iş yerine asmak yeterlidir.
 3. Personel mobil uygulamada QR'ı okutur; uygulama **anlık GPS konumunu** sunucuya gönderir.
 4. Sunucu: (a) QR kodun zaman geçerliliğini, (b) konumun yarıçap içinde olduğunu doğrular.
    Konum alan dışındaysa (örn. evden) **kayıt reddedilir**.

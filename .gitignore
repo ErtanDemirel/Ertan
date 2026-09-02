@@ -8,6 +8,8 @@ obj/
 *.db-shm
 *.db-wal
 appsettings.*.local.json
+App_Data/
+
 
 # ---------- Node / React ----------
 node_modules/

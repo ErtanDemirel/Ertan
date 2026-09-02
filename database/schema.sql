@@ -1,5 +1,5 @@
 /* ============================================================
-   PDKS - SQL Server Şema Scripti
+   COKO-SİS (PDKS) - SQL Server Şema Scripti
    Not: Uygulama EF Core ile şemayı otomatik oluşturabilir
    (EnsureCreated). Bu script, veritabanını manuel/SQL-first
    kurmak isteyenler içindir. Alanlar EF entity'leriyle uyumludur.
@@ -21,6 +21,7 @@ CREATE TABLE ServiceRoutes (
     ReturnTime    TIME NULL,
     DriverName    NVARCHAR(80) NULL,
     PlateNumber   NVARCHAR(20) NULL,
+    Capacity      INT NOT NULL DEFAULT 27,
     IsActive      BIT NOT NULL DEFAULT 1
 );
 
@@ -48,8 +49,11 @@ CREATE TABLE Personnel (
     PhoneNumber    NVARCHAR(20) NULL,
     Email          NVARCHAR(120) NULL,
     HireDate       DATETIME2 NULL,
+    ExitDate       DATETIME2 NULL,
+    ExitReason     NVARCHAR(200) NULL,
     ManagerId      INT NULL,
     ServiceRouteId INT NULL,
+    ServiceStop    NVARCHAR(80) NULL,
     ShiftId        INT NULL,
     IsActive       BIT NOT NULL DEFAULT 1,
     CreatedAt      DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
@@ -70,6 +74,8 @@ CREATE TABLE Users (
     PhoneNumber  NVARCHAR(20) NULL,
     Email        NVARCHAR(120) NULL,
     IsActive     BIT NOT NULL DEFAULT 1,
+    FailedLoginCount INT NOT NULL DEFAULT 0,
+    LockoutEnd   DATETIME2 NULL,
     PersonnelId  INT NULL,
     CreatedAt    DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
     LastLoginAt  DATETIME2 NULL,
@@ -117,7 +123,8 @@ CREATE TABLE LeaveRequests (
     StartDate      DATE NOT NULL,
     EndDate        DATE NOT NULL,
     TotalDays      DECIMAL(6,2) NOT NULL,
-    Reason         NVARCHAR(500) NULL,
+    Title          NVARCHAR(150) NULL,
+    Reason         NVARCHAR(1000) NULL,
     Status         INT NOT NULL DEFAULT 0,   -- 0=Pending,1=Approved,2=Rejected,3=Cancelled
     ApproverId     INT NULL,
     ManagerComment NVARCHAR(500) NULL,
@@ -218,4 +225,72 @@ CREATE TABLE RefreshTokens (
     CONSTRAINT FK_RT_User FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE
 );
 CREATE INDEX IX_RT_Token ON RefreshTokens(Token);
+
+/* ---------------- İzin Ek Dosyaları ---------------- */
+CREATE TABLE LeaveAttachments (
+    Id            INT IDENTITY PRIMARY KEY,
+    LeaveRequestId INT NOT NULL,
+    FileName      NVARCHAR(200) NOT NULL,
+    StoredPath    NVARCHAR(300) NOT NULL,
+    ContentType   NVARCHAR(100) NOT NULL,
+    SizeBytes     BIGINT NOT NULL,
+    UploadedAt    DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT FK_LA_Request FOREIGN KEY (LeaveRequestId) REFERENCES LeaveRequests(Id) ON DELETE CASCADE
+);
+
+/* ---------------- Bordro ---------------- */
+CREATE TABLE Payslips (
+    Id            INT IDENTITY PRIMARY KEY,
+    PersonnelId   INT NOT NULL,
+    [Year]        INT NOT NULL,
+    [Month]       INT NOT NULL,
+    FileName      NVARCHAR(200) NOT NULL,
+    StoredPath    NVARCHAR(300) NOT NULL,
+    ContentType   NVARCHAR(100) NOT NULL,
+    SizeBytes     BIGINT NOT NULL,
+    NetAmount     DECIMAL(12,2) NULL,
+    Note          NVARCHAR(250) NULL,
+    UploadedByUserId INT NOT NULL,
+    UploadedAt    DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT FK_PS_Personnel FOREIGN KEY (PersonnelId) REFERENCES Personnel(Id) ON DELETE CASCADE,
+    CONSTRAINT FK_PS_User FOREIGN KEY (UploadedByUserId) REFERENCES Users(Id)
+);
+CREATE INDEX IX_PS_Personnel_Period ON Payslips(PersonnelId, [Year], [Month]);
+
+/* ---------------- İş Başvuruları / Adaylar ---------------- */
+CREATE TABLE JobApplications (
+    Id             INT IDENTITY PRIMARY KEY,
+    FirstName      NVARCHAR(60) NOT NULL,
+    LastName       NVARCHAR(60) NOT NULL,
+    NationalId     NVARCHAR(11) NULL,
+    Phone          NVARCHAR(20) NULL,
+    Email          NVARCHAR(120) NULL,
+    BirthDate      DATETIME2 NULL,
+    [Address]      NVARCHAR(300) NULL,
+    Position       NVARCHAR(100) NULL,
+    Education      NVARCHAR(150) NULL,
+    ExperienceYears INT NULL,
+    PreviousWorkplace NVARCHAR(200) NULL,
+    Notes          NVARCHAR(1000) NULL,
+    CvFileName     NVARCHAR(200) NULL,
+    CvStoredPath   NVARCHAR(300) NULL,
+    CvContentType  NVARCHAR(100) NULL,
+    Status         INT NOT NULL DEFAULT 0,   -- 0=New,1=Reviewing,2=Interview,3=Offered,4=Hired,5=Rejected
+    ReviewNote     NVARCHAR(500) NULL,
+    ReviewedByUserId INT NULL,
+    CreatedAt      DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    UpdatedAt      DATETIME2 NULL
+);
+CREATE INDEX IX_JA_NationalId ON JobApplications(NationalId);
+
+/* ---------------- Denetim Kaydı ---------------- */
+CREATE TABLE AuditLogs (
+    Id         INT IDENTITY PRIMARY KEY,
+    UserId     INT NULL,
+    Action     NVARCHAR(80) NOT NULL,
+    Detail     NVARCHAR(400) NULL,
+    IpAddress  NVARCHAR(60) NULL,
+    CreatedAt  DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+);
+CREATE INDEX IX_Audit_CreatedAt ON AuditLogs(CreatedAt);
 GO

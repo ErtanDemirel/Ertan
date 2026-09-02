@@ -95,6 +95,7 @@ public class PersonnelController : ControllerBase
             HireDate = req.HireDate,
             ManagerId = req.ManagerId,
             ServiceRouteId = req.ServiceRouteId,
+            ServiceStop = req.ServiceStop,
             ShiftId = req.ShiftId,
             IsActive = true
         };
@@ -160,7 +161,10 @@ public class PersonnelController : ControllerBase
         p.HireDate = req.HireDate;
         p.ManagerId = req.ManagerId;
         p.ServiceRouteId = req.ServiceRouteId;
+        p.ServiceStop = req.ServiceStop;
         p.ShiftId = req.ShiftId;
+        p.ExitDate = req.ExitDate;
+        p.ExitReason = req.ExitReason;
         p.IsActive = req.IsActive;
         p.UpdatedAt = DateTime.UtcNow;
 
@@ -199,6 +203,6 @@ public class PersonnelController : ControllerBase
         p.Id, p.SicilNo, p.FirstName, p.LastName, $"{p.FirstName} {p.LastName}",
         p.NationalId, p.Department, p.Title, p.PhoneNumber, p.Email, p.HireDate,
         p.ManagerId, p.Manager is null ? null : $"{p.Manager.FirstName} {p.Manager.LastName}",
-        p.ServiceRouteId, p.ServiceRoute?.Name,
-        p.ShiftId, p.Shift?.Name, p.IsActive);
+        p.ServiceRouteId, p.ServiceRoute?.Name, p.ServiceStop,
+        p.ShiftId, p.Shift?.Name, p.ExitDate, p.ExitReason, p.IsActive);
 }
