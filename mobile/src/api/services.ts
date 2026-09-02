@@ -43,6 +43,15 @@ export const payrollApi = {
   fileUrl: (id: number) => `/api/payroll/${id}/file`,
 };
 
+export interface AppNotification {
+  id: number; title: string; body: string; type: string; isRead: boolean; createdAt: string;
+}
+export const notificationApi = {
+  my: () => api.get<{ items: AppNotification[]; unread: number }>('/api/notifications/my').then((r) => r.data),
+  read: (id: number) => api.post(`/api/notifications/${id}/read`).then((r) => r.data),
+  readAll: () => api.post('/api/notifications/read-all').then((r) => r.data),
+};
+
 export const announcementApi = {
   list: () => api.get<Announcement[]>('/api/announcements').then((r) => r.data),
   unreadMandatory: () =>

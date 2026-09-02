@@ -1,8 +1,8 @@
 import { api } from './client';
 import type {
-  Announcement, AnnouncementReadStat, Attendance, AuthResponse, JobApplication,
-  LeaveBalance, LeaveRequest, LeaveType, MealMenu, Paged, Payslip, Personnel,
-  QrPayload, ServiceAnalytics, ServiceRoute, Shift, WorkLocation,
+  Announcement, AnnouncementReadStat, AppNotification, Attendance, AuthResponse,
+  Holiday, JobApplication, LeaveBalance, LeaveRequest, LeaveType, MealMenu, Paged,
+  Payslip, Personnel, QrPayload, ServiceAnalytics, ServiceRoute, Shift, WorkLocation,
 } from './types';
 
 /** Yetki başlıklı dosya indirir ve tarayıcıda kaydettirir. */
@@ -77,6 +77,10 @@ export const shiftApi = {
     }).then((r) => r.data),
   assign: (b: unknown) => api.post('/api/shifts/assignments', b).then((r) => r.data),
   unassign: (id: number) => api.delete(`/api/shifts/assignments/${id}`).then((r) => r.data),
+  bulkAssign: (b: { shiftId: number; personnelIds: number[]; dates: string[]; note?: string }) =>
+    api.post<{ created: number; updated: number; total: number }>('/api/shifts/assignments/bulk', b).then((r) => r.data),
+  resolveSicil: (sicilNos: string[]) =>
+    api.post<{ found: { id: number; sicilNo: string; name: string }[]; notFound: string[] }>('/api/shifts/resolve-sicil', sicilNos).then((r) => r.data),
 };
 
 // ---------------- Leave ----------------
@@ -91,6 +95,7 @@ export const leaveApi = {
   requests: (status?: string) =>
     api.get<LeaveRequest[]>('/api/leave/requests', { params: { status } }).then((r) => r.data),
   pending: () => api.get<LeaveRequest[]>('/api/leave/pending').then((r) => r.data),
+  dashboard: (days = 14) => api.get<{ onLeave: any[]; upcoming: any[] }>('/api/leave/dashboard', { params: { days } }).then((r) => r.data),
   my: () => api.get<{ requests: LeaveRequest[]; balance: LeaveBalance | null }>('/api/leave/my').then((r) => r.data),
   create: (b: unknown) => api.post<LeaveRequest>('/api/leave/requests', b).then((r) => r.data),
   decide: (id: number, approve: boolean, comment?: string) =>
@@ -107,9 +112,11 @@ export const leaveApi = {
 
 // ---------------- Bordro ----------------
 export const payrollApi = {
-  list: (params: { personnelId?: number; year?: number } = {}) =>
+  list: (params: { personnelId?: number; year?: number; distributed?: boolean } = {}) =>
     api.get<Payslip[]>('/api/payroll', { params }).then((r) => r.data),
   my: () => api.get<Payslip[]>('/api/payroll/my').then((r) => r.data),
+  distribute: (payslipIds: number[], notifyInApp: boolean, notifySms: boolean) =>
+    api.post('/api/payroll/distribute', { payslipIds, notifyInApp, notifySms }).then((r) => r.data),
   upload: (data: { personnelId: number; year: number; month: number; netAmount?: number; note?: string; file: File }) => {
     const fd = new FormData();
     fd.append('personnelId', String(data.personnelId));
@@ -143,6 +150,32 @@ export const applicationApi = {
 // ---------------- Self-servis ----------------
 export const selfApi = {
   service: () => api.get<{ mine: any; routes: any[] }>('/api/me/service').then((r) => r.data),
+};
+
+// ---------------- Bildirimler ----------------
+export const notificationApi = {
+  my: () => api.get<{ items: AppNotification[]; unread: number }>('/api/notifications/my').then((r) => r.data),
+  read: (id: number) => api.post(`/api/notifications/${id}/read`).then((r) => r.data),
+  readAll: () => api.post('/api/notifications/read-all').then((r) => r.data),
+};
+
+// ---------------- Resmî Tatiller ----------------
+export const holidayApi = {
+  list: (year?: number) => api.get<Holiday[]>('/api/holidays', { params: { year } }).then((r) => r.data),
+  create: (b: { date: string; name: string; isHalfDay: boolean }) =>
+    api.post<Holiday>('/api/holidays', b).then((r) => r.data),
+  remove: (id: number) => api.delete(`/api/holidays/${id}`).then((r) => r.data),
+};
+
+// ---------------- Kullanıcılar (Admin) ----------------
+export interface AppUser {
+  id: number; username: string; role: string; isActive: boolean;
+  canDistributePayroll: boolean; fullName: string | null;
+}
+export const usersApi = {
+  list: () => api.get<AppUser[]>('/api/users').then((r) => r.data),
+  setPayrollPermission: (id: number, enabled: boolean) =>
+    api.post(`/api/users/${id}/payroll-permission`, { enabled }).then((r) => r.data),
 };
 
 // ---------------- Announcements ----------------

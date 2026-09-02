@@ -23,6 +23,31 @@ public class LeaveService
         return days;
     }
 
+    /// <summary>
+    /// İzin gününü hesaplar: hafta sonları VE resmî tatiller yıllık izinden düşülmez.
+    /// Yarım gün tatiller 0.5 gün sayılır.
+    /// </summary>
+    public async Task<decimal> CalculateLeaveDaysAsync(DateOnly start, DateOnly end, CancellationToken ct = default)
+    {
+        if (end < start) return 0;
+        var holidays = await _db.Holidays
+            .Where(h => h.Date >= start && h.Date <= end)
+            .ToDictionaryAsync(h => h.Date, h => h.IsHalfDay, ct);
+
+        decimal days = 0;
+        for (var d = start; d <= end; d = d.AddDays(1))
+        {
+            if (d.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday) continue;
+            if (holidays.TryGetValue(d, out var isHalf))
+            {
+                if (isHalf) days += 0.5m; // yarım gün tatil → yarım gün izin sayılır
+                continue;                  // tam tatil → izinden düşmez
+            }
+            days += 1;
+        }
+        return days;
+    }
+
     /// <summary>Yeni izin talebi oluşturur; yıllık izinse bakiyeden rezerve eder.</summary>
     public async Task<LeaveRequest> CreateAsync(int personnelId, int leaveTypeId,
         DateOnly start, DateOnly end, string? title, string? reason, decimal? days,
@@ -37,8 +62,8 @@ public class LeaveService
         var type = await _db.LeaveTypes.FirstOrDefaultAsync(t => t.Id == leaveTypeId && t.IsActive, ct)
             ?? throw new InvalidOperationException("İzin türü geçersiz.");
 
-        // Talep sahibi gün girebilir; aksi halde hafta sonları hariç hesaplanır.
-        var calc = CalculateWorkingDays(start, end);
+        // Talep sahibi gün girebilir; aksi halde hafta sonu + resmî tatil hariç hesaplanır.
+        var calc = await CalculateLeaveDaysAsync(start, end, ct);
         var totalDays = days is > 0 ? days.Value : calc;
         var span = end.DayNumber - start.DayNumber + 1; // takvim günü üst sınırı
         if (totalDays <= 0 || totalDays > span)

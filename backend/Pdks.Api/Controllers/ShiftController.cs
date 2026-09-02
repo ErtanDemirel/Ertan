@@ -152,6 +152,65 @@ public class ShiftController : ControllerBase
         return Ok(dto);
     }
 
+    public record BulkAssignRequest(int ShiftId, IReadOnlyList<int> PersonnelIds, IReadOnlyList<DateOnly> Dates, string? Note);
+
+    /// <summary>Toplu vardiya atama: seçili personellerin seçili günlerine tek vardiya atar (upsert).</summary>
+    [HttpPost("assignments/bulk")]
+    public async Task<IActionResult> BulkAssign(BulkAssignRequest req, CancellationToken ct)
+    {
+        if (req.PersonnelIds.Count == 0 || req.Dates.Count == 0)
+            return BadRequest(new { message = "Personel ve tarih seçin." });
+        if (!await _db.Shifts.AnyAsync(s => s.Id == req.ShiftId, ct))
+            return BadRequest(new { message = "Vardiya bulunamadı." });
+
+        var pids = req.PersonnelIds.Distinct().ToList();
+        var dates = req.Dates.Distinct().ToList();
+
+        // Mevcut atamaları çek (upsert için)
+        var existing = await _db.ShiftAssignments
+            .Where(a => pids.Contains(a.PersonnelId) && dates.Contains(a.Date))
+            .ToListAsync(ct);
+        var map = existing.ToDictionary(a => (a.PersonnelId, a.Date));
+
+        int created = 0, updated = 0;
+        foreach (var pid in pids)
+        {
+            foreach (var date in dates)
+            {
+                if (map.TryGetValue((pid, date), out var a))
+                {
+                    a.ShiftId = req.ShiftId;
+                    a.Note = req.Note;
+                    updated++;
+                }
+                else
+                {
+                    _db.ShiftAssignments.Add(new ShiftAssignment
+                    {
+                        PersonnelId = pid, ShiftId = req.ShiftId, Date = date, Note = req.Note
+                    });
+                    created++;
+                }
+            }
+        }
+        await _db.SaveChangesAsync(ct);
+        return Ok(new { created, updated, total = created + updated });
+    }
+
+    /// <summary>Sicil numaralarını (Excel'den yapıştırılan) personel id'lerine çözer.</summary>
+    [HttpPost("resolve-sicil")]
+    public async Task<ActionResult<object>> ResolveSicil([FromBody] IReadOnlyList<string> sicilNos, CancellationToken ct)
+    {
+        var wanted = sicilNos.Select(s => s.Trim()).Where(s => s.Length > 0).Distinct().ToList();
+        var found = await _db.Personnel.AsNoTracking()
+            .Where(p => wanted.Contains(p.SicilNo))
+            .Select(p => new { p.Id, p.SicilNo, Name = p.FirstName + " " + p.LastName })
+            .ToListAsync(ct);
+        var foundSet = found.Select(f => f.SicilNo).ToHashSet();
+        var notFound = wanted.Where(s => !foundSet.Contains(s)).ToList();
+        return Ok(new { found, notFound });
+    }
+
     [HttpDelete("assignments/{id:int}")]
     public async Task<IActionResult> DeleteAssignment(int id, CancellationToken ct)
     {

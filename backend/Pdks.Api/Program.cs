@@ -56,6 +56,7 @@ builder.Services.AddSingleton<FileStorageService>();
 builder.Services.AddSingleton<LeaveDocumentService>();
 builder.Services.AddScoped<LeaveService>();
 builder.Services.AddScoped<AuditService>();
+builder.Services.AddScoped<NotificationService>();
 
 // SMS sağlayıcısı
 var smsProvider = builder.Configuration.GetValue<string>($"{SmsOptions.Section}:Provider") ?? "Console";

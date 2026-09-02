@@ -21,6 +21,12 @@ public class User
 
     public UserRole Role { get; set; } = UserRole.Personnel;
 
+    /// <summary>
+    /// Bordro yükleme/dağıtma ve bordro dosyalarına erişim yetkisi.
+    /// Bu yetki OLMADAN hiçbir kullanıcı (Admin dahil) başka birinin bordrosunu göremez/dağıtamaz.
+    /// </summary>
+    public bool CanDistributePayroll { get; set; }
+
     /// <summary>SMS ile tek kullanımlık kod göndermek için telefon.</summary>
     [MaxLength(20)]
     public string? PhoneNumber { get; set; }

@@ -74,6 +74,7 @@ CREATE TABLE Users (
     PhoneNumber  NVARCHAR(20) NULL,
     Email        NVARCHAR(120) NULL,
     IsActive     BIT NOT NULL DEFAULT 1,
+    CanDistributePayroll BIT NOT NULL DEFAULT 0,
     FailedLoginCount INT NOT NULL DEFAULT 0,
     LockoutEnd   DATETIME2 NULL,
     PersonnelId  INT NULL,
@@ -252,6 +253,10 @@ CREATE TABLE Payslips (
     Note          NVARCHAR(250) NULL,
     UploadedByUserId INT NOT NULL,
     UploadedAt    DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    IsDistributed BIT NOT NULL DEFAULT 0,
+    DistributedAt DATETIME2 NULL,
+    NotifiedInApp BIT NOT NULL DEFAULT 0,
+    NotifiedSms   BIT NOT NULL DEFAULT 0,
     CONSTRAINT FK_PS_Personnel FOREIGN KEY (PersonnelId) REFERENCES Personnel(Id) ON DELETE CASCADE,
     CONSTRAINT FK_PS_User FOREIGN KEY (UploadedByUserId) REFERENCES Users(Id)
 );
@@ -293,4 +298,26 @@ CREATE TABLE AuditLogs (
     CreatedAt  DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
 );
 CREATE INDEX IX_Audit_CreatedAt ON AuditLogs(CreatedAt);
+
+/* ---------------- Resmî Tatiller ---------------- */
+CREATE TABLE Holidays (
+    Id        INT IDENTITY PRIMARY KEY,
+    [Date]    DATE NOT NULL,
+    Name      NVARCHAR(120) NOT NULL,
+    IsHalfDay BIT NOT NULL DEFAULT 0,
+    CONSTRAINT UQ_Holiday_Date UNIQUE ([Date])
+);
+
+/* ---------------- Bildirimler ---------------- */
+CREATE TABLE Notifications (
+    Id        INT IDENTITY PRIMARY KEY,
+    UserId    INT NOT NULL,
+    Title     NVARCHAR(150) NOT NULL,
+    Body      NVARCHAR(500) NOT NULL,
+    [Type]    NVARCHAR(40) NOT NULL DEFAULT 'info',
+    IsRead    BIT NOT NULL DEFAULT 0,
+    CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT FK_Notif_User FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE
+);
+CREATE INDEX IX_Notif_User ON Notifications(UserId, IsRead);
 GO

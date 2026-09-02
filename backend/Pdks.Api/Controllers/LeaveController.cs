@@ -148,6 +148,47 @@ public class LeaveController : ControllerBase
         return Ok(items);
     }
 
+    /// <summary>Panel için: bugün izinde olanlar + yaklaşan onaylı izinler.</summary>
+    [HttpGet("dashboard")]
+    [Authorize(Roles = "Admin,Manager")]
+    public async Task<ActionResult<object>> Dashboard([FromQuery] int days = 14, CancellationToken ct = default)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var until = today.AddDays(days);
+
+        var approved = await _db.LeaveRequests
+            .Include(r => r.Personnel).Include(r => r.LeaveType)
+            .Where(r => r.Status == LeaveStatus.Approved && r.EndDate >= today && r.StartDate <= until)
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+        var onLeave = approved
+            .Where(r => r.StartDate <= today && today <= r.EndDate)
+            .OrderBy(r => r.EndDate)
+            .Select(r => new
+            {
+                r.PersonnelId,
+                name = r.Personnel!.FirstName + " " + r.Personnel.LastName,
+                sicilNo = r.Personnel.SicilNo,
+                leaveType = r.LeaveType!.Name,
+                r.StartDate, r.EndDate
+            }).ToList();
+
+        var upcoming = approved
+            .Where(r => r.StartDate > today)
+            .OrderBy(r => r.StartDate)
+            .Select(r => new
+            {
+                r.PersonnelId,
+                name = r.Personnel!.FirstName + " " + r.Personnel.LastName,
+                sicilNo = r.Personnel.SicilNo,
+                leaveType = r.LeaveType!.Name,
+                r.StartDate, r.EndDate, r.TotalDays
+            }).ToList();
+
+        return Ok(new { onLeave, upcoming });
+    }
+
     [HttpPost("requests")]
     public async Task<ActionResult<LeaveRequestDto>> Create(CreateLeaveRequest req, CancellationToken ct)
     {

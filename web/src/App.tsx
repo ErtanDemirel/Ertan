@@ -7,7 +7,10 @@ import Dashboard from './pages/Dashboard';
 import PersonnelPage from './pages/Personnel';
 import ShiftsPage from './pages/Shifts';
 import ShiftPlanPage from './pages/ShiftPlan';
+import BulkShiftAssignPage from './pages/BulkShiftAssign';
 import LeavePage from './pages/LeaveManagement';
+import HolidaysPage from './pages/Holidays';
+import UsersPage from './pages/UsersPage';
 import AnnouncementsPage from './pages/Announcements';
 import MealsPage from './pages/Meals';
 import RoutesPage from './pages/ServiceRoutes';
@@ -56,6 +59,7 @@ export default function App() {
         <Route path="personnel" element={<PersonnelPage />} />
         <Route path="shifts" element={<ShiftsPage />} />
         <Route path="shift-plan" element={<ShiftPlanPage />} />
+        <Route path="bulk-shift" element={<BulkShiftAssignPage />} />
         <Route path="leave" element={<LeavePage />} />
         <Route path="payroll" element={<PayrollPage />} />
         <Route path="candidates" element={<CandidatesPage />} />
@@ -65,6 +69,8 @@ export default function App() {
         <Route path="service-analytics" element={<ServiceAnalyticsPage />} />
         <Route path="locations" element={<LocationsPage />} />
         <Route path="attendance" element={<AttendancePage />} />
+        <Route path="holidays" element={<HolidaysPage />} />
+        <Route path="users" element={<UsersPage />} />
       </Route>
 
       {/* Personel self-servis */}

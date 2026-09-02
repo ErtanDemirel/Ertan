@@ -55,6 +55,23 @@ public static class DbSeeder
             });
         }
 
+        // ---- Resmî tatiller (sabit tarihli ulusal bayramlar, bu yıl) ----
+        if (!await db.Holidays.AnyAsync())
+        {
+            int y = DateTime.UtcNow.Year;
+            db.Holidays.AddRange(
+                new Holiday { Date = new DateOnly(y, 1, 1), Name = "Yılbaşı" },
+                new Holiday { Date = new DateOnly(y, 4, 23), Name = "Ulusal Egemenlik ve Çocuk Bayramı" },
+                new Holiday { Date = new DateOnly(y, 5, 1), Name = "Emek ve Dayanışma Günü" },
+                new Holiday { Date = new DateOnly(y, 5, 19), Name = "Atatürk'ü Anma, Gençlik ve Spor Bayramı" },
+                new Holiday { Date = new DateOnly(y, 7, 15), Name = "Demokrasi ve Millî Birlik Günü" },
+                new Holiday { Date = new DateOnly(y, 8, 30), Name = "Zafer Bayramı" },
+                new Holiday { Date = new DateOnly(y, 10, 28), Name = "Cumhuriyet Bayramı Arifesi", IsHalfDay = true },
+                new Holiday { Date = new DateOnly(y, 10, 29), Name = "Cumhuriyet Bayramı" }
+            );
+            // Dinî bayramlar (Ramazan/Kurban) her yıl değiştiği için yönetici panelinden eklenir.
+        }
+
         await db.SaveChangesAsync();
 
         // ---- Yönetici (admin) hesabı ----
@@ -69,6 +86,23 @@ public static class DbSeeder
                 Role = UserRole.Admin,
                 PhoneNumber = "5550000000",
                 Email = "admin@pdks.local"
+            });
+            await db.SaveChangesAsync();
+        }
+
+        // ---- Bordro sorumlusu hesabı (yalnızca bu kullanıcı bordro yükleyip dağıtabilir) ----
+        if (!await db.Users.AnyAsync(u => u.Username == "bordro"))
+        {
+            var (bHash, bSalt) = hasher.Hash("Bordro123!");
+            db.Users.Add(new User
+            {
+                Username = "bordro",
+                PasswordHash = bHash,
+                PasswordSalt = bSalt,
+                Role = UserRole.Manager,
+                CanDistributePayroll = true,
+                PhoneNumber = "5559990000",
+                Email = "bordro@cokosis.local"
             });
             await db.SaveChangesAsync();
         }

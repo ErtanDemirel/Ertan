@@ -8,6 +8,7 @@ export interface UserInfo {
   role: Role;
   personnelId: number | null;
   fullName: string | null;
+  canDistributePayroll: boolean;
 }
 
 export interface AuthResponse {
@@ -185,6 +186,24 @@ export interface Payslip {
   netAmount?: number | null;
   note?: string | null;
   uploadedAt: string;
+  isDistributed: boolean;
+  distributedAt?: string | null;
+}
+
+export interface AppNotification {
+  id: number;
+  title: string;
+  body: string;
+  type: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface Holiday {
+  id: number;
+  date: string;
+  name: string;
+  isHalfDay: boolean;
 }
 
 export interface PriorEmployment {
@@ -233,12 +252,19 @@ export interface ServiceRouteAnalytics {
   servicesNeeded: number;
   stops: ServiceStopStat[];
 }
+export interface ShiftServiceSummary {
+  shiftId: number;
+  shiftName: string;
+  totalPersonnel: number;
+  servicesNeeded: number;
+}
 export interface ServiceAnalytics {
   shiftId?: number | null;
   shiftName?: string | null;
   totalPersonnel: number;
   totalServicesNeeded: number;
   routes: ServiceRouteAnalytics[];
+  byShift: ShiftServiceSummary[];
 }
 
 export interface Attendance {

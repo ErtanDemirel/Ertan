@@ -28,6 +28,9 @@ public class TokenService
         if (user.PersonnelId.HasValue)
             claims.Add(new Claim("personnelId", user.PersonnelId.Value.ToString()));
 
+        if (user.CanDistributePayroll)
+            claims.Add(new Claim("canPayroll", "1"));
+
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_opt.Key));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 

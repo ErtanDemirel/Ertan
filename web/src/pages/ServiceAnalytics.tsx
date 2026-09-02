@@ -36,6 +36,24 @@ export default function ServiceAnalyticsPage() {
             </div>
           </div>
 
+          {/* Vardiya bazlı gerekli servis */}
+          {data.data.byShift.length > 0 && (
+            <div className="card p-5">
+              <h3 className="mb-3 text-base font-semibold text-slate-700">Vardiya Bazında Gerekli Servis</h3>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {data.data.byShift.map((s) => (
+                  <div key={s.shiftId} className="rounded-lg border border-slate-200 p-3">
+                    <div className="font-medium text-slate-800">{s.shiftName}</div>
+                    <div className="mt-1 flex items-baseline gap-2">
+                      <span className="text-2xl font-bold text-brand-700">{s.servicesNeeded}</span>
+                      <span className="text-xs text-slate-500">servis / {s.totalPersonnel} kişi</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="space-y-4">
             {data.data.routes.map((r) => (
               <div key={r.routeId} className="card p-5">

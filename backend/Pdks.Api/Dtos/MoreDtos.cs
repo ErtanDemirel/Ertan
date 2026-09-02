@@ -6,7 +6,18 @@ namespace Pdks.Api.Dtos;
 public record PayslipDto(
     int Id, int PersonnelId, string PersonnelName, string SicilNo,
     int Year, int Month, string FileName, long SizeBytes,
-    decimal? NetAmount, string? Note, DateTime UploadedAt);
+    decimal? NetAmount, string? Note, DateTime UploadedAt,
+    bool IsDistributed, DateTime? DistributedAt);
+
+public record DistributePayslipsRequest(
+    [property: Required] IReadOnlyList<int> PayslipIds,
+    bool NotifyInApp,
+    bool NotifySms);
+
+/// <summary>Bordro yükleme sonucu: eşleşenler + eşleşmeyen (dağıtılamayan) satırlar.</summary>
+public record PayslipMatchResult(
+    IReadOnlyList<PayslipDto> Matched,
+    IReadOnlyList<string> Unmatched);
 
 // ---------------- İş Başvurusu / Aday ----------------
 public record JobApplicationRequest(
@@ -58,9 +69,12 @@ public record ServiceRouteAnalytics(
     int ServicesNeeded,
     IReadOnlyList<ServiceStopStat> Stops);
 
+public record ShiftServiceSummary(int ShiftId, string ShiftName, int TotalPersonnel, int ServicesNeeded);
+
 public record ServiceAnalyticsResult(
     int? ShiftId,
     string? ShiftName,
     int TotalPersonnel,
     int TotalServicesNeeded,
-    IReadOnlyList<ServiceRouteAnalytics> Routes);
+    IReadOnlyList<ServiceRouteAnalytics> Routes,
+    IReadOnlyList<ShiftServiceSummary> ByShift);

@@ -229,7 +229,8 @@ public class AuthController : ControllerBase
 
     private static UserInfo ToUserInfo(User u) => new(
         u.Id, u.Username, u.Role.ToString(), u.PersonnelId,
-        u.Personnel is null ? null : $"{u.Personnel.FirstName} {u.Personnel.LastName}");
+        u.Personnel is null ? null : $"{u.Personnel.FirstName} {u.Personnel.LastName}",
+        u.CanDistributePayroll);
 
     private static string GenerateNumericCode(int length)
     {

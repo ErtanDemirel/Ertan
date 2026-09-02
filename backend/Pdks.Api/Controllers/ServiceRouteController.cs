@@ -97,15 +97,27 @@ public class ServiceRouteController : ControllerBase
     {
         var routes = await _db.ServiceRoutes.AsNoTracking()
             .Where(r => r.IsActive).OrderBy(r => r.Name).ToListAsync(ct);
+        var capOf = routes.ToDictionary(r => r.Id, r => r.Capacity <= 0 ? 27 : r.Capacity);
 
-        var pq = _db.Personnel.AsNoTracking().Where(p => p.IsActive && p.ServiceRouteId != null);
-        if (shiftId.HasValue) pq = pq.Where(p => p.ShiftId == shiftId);
-        var personnel = await pq
-            .Select(p => new { p.ServiceRouteId, p.ServiceStop })
+        // Tüm servis kullanan aktif personel (vardiya bilgisiyle)
+        var all = await _db.Personnel.AsNoTracking()
+            .Where(p => p.IsActive && p.ServiceRouteId != null)
+            .Select(p => new { RouteId = p.ServiceRouteId!.Value, p.ServiceStop, p.ShiftId })
             .ToListAsync(ct);
 
-        var byRoute = personnel.GroupBy(p => p.ServiceRouteId!.Value)
-            .ToDictionary(g => g.Key, g => g.ToList());
+        // Seçili vardiyaya göre (filtre yoksa hepsi) hat istatistikleri
+        var filtered = shiftId.HasValue ? all.Where(p => p.ShiftId == shiftId).ToList() : all;
+        var byRoute = filtered.GroupBy(p => p.RouteId).ToDictionary(g => g.Key, g => g.ToList());
+
+        // Vardiya kırılımı: her aktif vardiya için gerekli servis sayısı
+        var shifts = await _db.Shifts.AsNoTracking().Where(s => s.IsActive).OrderBy(s => s.StartTime).ToListAsync(ct);
+        var byShift = shifts.Select(s =>
+        {
+            var inShift = all.Where(p => p.ShiftId == s.Id).ToList();
+            var needed = inShift.GroupBy(p => p.RouteId)
+                .Sum(g => (int)Math.Ceiling(g.Count() / (double)(capOf.TryGetValue(g.Key, out var c) ? c : 27)));
+            return new ShiftServiceSummary(s.Id, s.Name, inShift.Count, needed);
+        }).ToList();
 
         var routeStats = new List<ServiceRouteAnalytics>();
         foreach (var r in routes)
@@ -128,9 +140,10 @@ public class ServiceRouteController : ControllerBase
 
         return Ok(new ServiceAnalyticsResult(
             shiftId, shiftName,
-            personnel.Count,
+            filtered.Count,
             routeStats.Sum(s => s.ServicesNeeded),
-            routeStats));
+            routeStats,
+            byShift));
     }
 
     private static ServiceRouteDto Map(ServiceRoute r, int count) => new(

@@ -57,4 +57,10 @@ public class Payslip
     public User? UploadedBy { get; set; }
 
     public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>Dağıtıldı mı? Personel yalnızca DAĞITILMIŞ bordrosunu görür.</summary>
+    public bool IsDistributed { get; set; }
+    public DateTime? DistributedAt { get; set; }
+    public bool NotifiedInApp { get; set; }
+    public bool NotifiedSms { get; set; }
 }

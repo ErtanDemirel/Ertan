@@ -26,6 +26,8 @@ public class AppDbContext : DbContext
     public DbSet<Payslip> Payslips => Set<Payslip>();
     public DbSet<JobApplication> JobApplications => Set<JobApplication>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<Holiday> Holidays => Set<Holiday>();
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -206,5 +208,15 @@ public class AppDbContext : DbContext
 
         // ---- AuditLog ----
         b.Entity<AuditLog>(e => e.HasIndex(x => x.CreatedAt));
+
+        // ---- Holiday ----
+        b.Entity<Holiday>(e => e.HasIndex(x => x.Date).IsUnique());
+
+        // ---- Notification ----
+        b.Entity<Notification>(e =>
+        {
+            e.HasIndex(x => new { x.UserId, x.IsRead });
+            e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
     }
 }

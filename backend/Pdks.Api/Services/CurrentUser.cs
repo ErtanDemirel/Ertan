@@ -26,4 +26,8 @@ public static class ClaimsExtensions
         var r = user.GetRole();
         return r is "Admin" or "Manager";
     }
+
+    /// <summary>Bordro dağıtım yetkisi (JWT claim). Admin bile bu claim olmadan bordroya erişemez.</summary>
+    public static bool CanDistributePayroll(this ClaimsPrincipal user) =>
+        user.FindFirstValue("canPayroll") == "1";
 }

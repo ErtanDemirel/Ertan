@@ -7,6 +7,7 @@ interface AuthState {
   user: UserInfo | null;
   isAuthenticated: boolean;
   isManager: boolean;
+  canPayroll: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
 }
@@ -21,6 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       isAuthenticated: !!user,
       isManager: user?.role === 'Admin' || user?.role === 'Manager',
+      canPayroll: !!user?.canDistributePayroll,
       async login(username, password) {
         const auth = await authApi.login(username, password);
         tokenStore.set(auth);

@@ -17,7 +17,8 @@ public record UserInfo(
     string Username,
     string Role,
     int? PersonnelId,
-    string? FullName);
+    string? FullName,
+    bool CanDistributePayroll);
 
 public record RefreshRequest([property: Required] string RefreshToken);
 
