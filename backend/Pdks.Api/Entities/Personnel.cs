@@ -24,6 +24,16 @@ public class Personnel
     [MaxLength(80)]
     public string? Department { get; set; }
 
+    /// <summary>Onay zinciri için departman kaydı (yeni model).</summary>
+    public int? DepartmentId { get; set; }
+    public Department? Dept { get; set; }
+
+    /// <summary>Onay zincirinde "İK Yöneticisi" adımı bu kişilere çözülür.</summary>
+    public bool IsHrManager { get; set; }
+
+    /// <summary>Onay zincirinde "Fabrika Müdürü" adımı bu kişilere çözülür.</summary>
+    public bool IsFactoryManager { get; set; }
+
     [MaxLength(80)]
     public string? Title { get; set; }
 

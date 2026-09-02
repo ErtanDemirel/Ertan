@@ -43,6 +43,23 @@ export const payrollApi = {
   fileUrl: (id: number) => `/api/payroll/${id}/file`,
 };
 
+export interface AdvanceReq { id: number; amount: number; reason?: string | null; status: string; managerComment?: string | null; requestedAt: string; }
+export interface ExpenseReq { id: number; amount: number; title?: string | null; description?: string | null; hasFile: boolean; status: string; managerComment?: string | null; requestedAt: string; }
+
+export const requestApi = {
+  my: () => api.get<{ advances: AdvanceReq[]; expenses: ExpenseReq[] }>('/api/requests/my').then((r) => r.data),
+  createAdvance: (amount: number, reason?: string) =>
+    api.post('/api/requests/advance', { amount, reason }).then((r) => r.data),
+  createExpense: (amount: number, title: string | undefined, description: string | undefined, file: { uri: string; name: string; type: string } | null) => {
+    const fd = new FormData();
+    fd.append('amount', String(amount));
+    if (title) fd.append('title', title);
+    if (description) fd.append('description', description);
+    if (file) fd.append('file', { uri: file.uri, name: file.name, type: file.type } as any);
+    return api.post('/api/requests/expense', fd).then((r) => r.data);
+  },
+};
+
 export interface AppNotification {
   id: number; title: string; body: string; type: string; isRead: boolean; createdAt: string;
 }

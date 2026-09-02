@@ -28,6 +28,12 @@ public class AppDbContext : DbContext
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<Holiday> Holidays => Set<Holiday>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<Department> Departments => Set<Department>();
+    public DbSet<ApprovalStepTemplate> ApprovalStepTemplates => Set<ApprovalStepTemplate>();
+    public DbSet<ApprovalRequest> ApprovalRequests => Set<ApprovalRequest>();
+    public DbSet<ApprovalStep> ApprovalSteps => Set<ApprovalStep>();
+    public DbSet<AdvanceRequest> AdvanceRequests => Set<AdvanceRequest>();
+    public DbSet<ExpenseRequest> ExpenseRequests => Set<ExpenseRequest>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -217,6 +223,50 @@ public class AppDbContext : DbContext
         {
             e.HasIndex(x => new { x.UserId, x.IsRead });
             e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ---- Department ----
+        b.Entity<Department>(e =>
+        {
+            e.HasOne(x => x.Manager).WithMany().HasForeignKey(x => x.ManagerPersonnelId).OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<Personnel>(e =>
+        {
+            e.HasOne(x => x.Dept).WithMany().HasForeignKey(x => x.DepartmentId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ---- ApprovalStepTemplate ----
+        b.Entity<ApprovalStepTemplate>(e =>
+        {
+            e.HasIndex(x => new { x.DepartmentId, x.Order });
+            e.HasOne(x => x.Department).WithMany(d => d.Steps).HasForeignKey(x => x.DepartmentId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.SpecificPerson).WithMany().HasForeignKey(x => x.SpecificPersonnelId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ---- ApprovalRequest / ApprovalStep ----
+        b.Entity<ApprovalRequest>(e =>
+        {
+            e.HasIndex(x => new { x.Kind, x.RequestId });
+            e.HasOne(x => x.Requester).WithMany().HasForeignKey(x => x.RequesterPersonnelId).OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<ApprovalStep>(e =>
+        {
+            e.HasIndex(x => new { x.ApprovalRequestId, x.Order });
+            e.HasIndex(x => new { x.ApproverPersonnelId, x.Status });
+            e.HasOne(x => x.ApprovalRequest).WithMany(r => r.Steps).HasForeignKey(x => x.ApprovalRequestId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Approver).WithMany().HasForeignKey(x => x.ApproverPersonnelId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ---- Advance / Expense ----
+        b.Entity<AdvanceRequest>(e =>
+        {
+            e.Property(x => x.Amount).HasPrecision(12, 2);
+            e.HasOne(x => x.Personnel).WithMany().HasForeignKey(x => x.PersonnelId).OnDelete(DeleteBehavior.Cascade);
+        });
+        b.Entity<ExpenseRequest>(e =>
+        {
+            e.Property(x => x.Amount).HasPrecision(12, 2);
+            e.HasOne(x => x.Personnel).WithMany().HasForeignKey(x => x.PersonnelId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

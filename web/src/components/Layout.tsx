@@ -2,7 +2,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, CalendarClock, CalendarDays, Megaphone,
   UtensilsCrossed, Bus, MapPin, LogOut, ClipboardCheck, ShieldCheck,
-  Wallet, UserPlus, BarChart3, CalendarRange, Layers, CalendarX, KeyRound,
+  Wallet, UserPlus, BarChart3, CalendarRange, Layers, CalendarX, KeyRound, GitBranch,
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import NotificationBell from './NotificationBell';
@@ -22,6 +22,7 @@ const nav: NavItem[] = [
   { to: '/shift-plan', label: 'Vardiya Planı', icon: CalendarRange },
   { to: '/bulk-shift', label: 'Toplu Vardiya Atama', icon: Layers },
   { to: '/leave', label: 'İzin / Talepler', icon: CalendarDays },
+  { to: '/departments', label: 'Onay Zinciri', icon: GitBranch },
   { to: '/payroll', label: 'Bordro', icon: Wallet, show: ({ canPayroll }) => canPayroll },
   { to: '/candidates', label: 'Aday Yönetimi', icon: UserPlus },
   { to: '/announcements', label: 'Duyurular', icon: Megaphone },

@@ -1,16 +1,17 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, Pencil, Trash2, Search, UserPlus } from 'lucide-react';
-import { personnelApi, routeApi, shiftApi, PersonnelFilter } from '../api/services';
+import { personnelApi, routeApi, shiftApi, departmentApi, PersonnelFilter } from '../api/services';
 import type { Personnel } from '../api/types';
 import { apiError } from '../api/client';
-import { Modal, Field, Spinner, EmptyState } from '../components/ui';
+import { Modal, Field, Spinner, EmptyState, Toggle } from '../components/ui';
 import { useAuth } from '../auth/AuthContext';
 
 const emptyForm = {
   sicilNo: '', firstName: '', lastName: '', nationalId: '', department: '',
   title: '', phoneNumber: '', email: '', hireDate: '', managerId: '', serviceRouteId: '',
-  serviceStop: '', shiftId: '', exitDate: '', exitReason: '', annualLeaveDays: '14', isActive: true,
+  serviceStop: '', shiftId: '', departmentId: '', isHrManager: false, isFactoryManager: false,
+  exitDate: '', exitReason: '', annualLeaveDays: '14', isActive: true,
   createLoginAccount: false, username: '', initialPassword: '',
 };
 
@@ -26,6 +27,7 @@ export default function PersonnelPage() {
 
   const routes = useQuery({ queryKey: ['routes'], queryFn: () => routeApi.list() });
   const shifts = useQuery({ queryKey: ['shifts'], queryFn: () => shiftApi.list() });
+  const deptList = useQuery({ queryKey: ['departments'], queryFn: () => departmentApi.list() });
   const managers = useQuery({
     queryKey: ['managers'],
     queryFn: () => personnelApi.list({ pageSize: 200 }),
@@ -74,6 +76,8 @@ export default function PersonnelPage() {
       managerId: p.managerId?.toString() || '', serviceRouteId: p.serviceRouteId?.toString() || '',
       serviceStop: p.serviceStop || '',
       shiftId: p.shiftId?.toString() || '',
+      departmentId: p.departmentId?.toString() || '',
+      isHrManager: p.isHrManager, isFactoryManager: p.isFactoryManager,
       exitDate: p.exitDate?.slice(0, 10) || '', exitReason: p.exitReason || '',
       isActive: p.isActive,
     });
@@ -91,6 +95,9 @@ export default function PersonnelPage() {
       serviceRouteId: form.serviceRouteId ? Number(form.serviceRouteId) : null,
       serviceStop: form.serviceStop || null,
       shiftId: form.shiftId ? Number(form.shiftId) : null,
+      departmentId: form.departmentId ? Number(form.departmentId) : null,
+      isHrManager: form.isHrManager,
+      isFactoryManager: form.isFactoryManager,
     };
     if (editing) {
       save.mutate({
@@ -265,6 +272,16 @@ export default function PersonnelPage() {
             </select>
           </Field>
           <Field label="Bindiği Durak" hint="Servis analizi için"><input className="input" value={form.serviceStop} onChange={(e) => set('serviceStop', e.target.value)} /></Field>
+          <Field label="Departman (onay zinciri)" hint="Onay zinciri bu departmandan belirlenir">
+            <select className="input" value={form.departmentId} onChange={(e) => set('departmentId', e.target.value)}>
+              <option value="">- Yok -</option>
+              {deptList.data?.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          </Field>
+          <div className="sm:col-span-2 flex flex-wrap gap-6 rounded-lg bg-slate-50 p-3">
+            <Toggle checked={form.isHrManager} onChange={(v) => set('isHrManager', v)} label="İK Yöneticisi (onay zincirinde İK adımı)" />
+            <Toggle checked={form.isFactoryManager} onChange={(v) => set('isFactoryManager', v)} label="Fabrika Müdürü (onay zincirinde fabrika adımı)" />
+          </div>
 
           {editing && (
             <>

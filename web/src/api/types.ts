@@ -44,9 +44,72 @@ export interface Personnel {
   serviceStop?: string | null;
   shiftId?: number | null;
   shiftName?: string | null;
+  departmentId?: number | null;
+  departmentName?: string | null;
+  isHrManager: boolean;
+  isFactoryManager: boolean;
   exitDate?: string | null;
   exitReason?: string | null;
   isActive: boolean;
+}
+
+export interface ApprovalStepInfo {
+  order: number;
+  label: string;
+  approverName?: string | null;
+  status: string;
+  infoOnly: boolean;
+  comment?: string | null;
+}
+export interface PendingApproval {
+  approvalRequestId: number;
+  kind: string;
+  kindLabel: string;
+  requesterName: string;
+  sicilNo: string;
+  summary: string;
+  title?: string | null;
+  createdAt: string;
+  currentStepLabel: string;
+  steps: ApprovalStepInfo[];
+}
+
+export interface Department {
+  id: number;
+  name: string;
+  managerPersonnelId?: number | null;
+  managerName?: string | null;
+  isActive: boolean;
+  stepCount: number;
+}
+export interface ApprovalTemplateStep {
+  id: number;
+  order: number;
+  kind: string;
+  specificPersonnelId?: number | null;
+  specificPersonName?: string | null;
+  infoOnly: boolean;
+}
+
+export interface AdvanceRequest {
+  id: number;
+  personnelName: string;
+  amount: number;
+  reason?: string | null;
+  status: string;
+  managerComment?: string | null;
+  requestedAt: string;
+}
+export interface ExpenseRequest {
+  id: number;
+  personnelName: string;
+  amount: number;
+  title?: string | null;
+  description?: string | null;
+  hasFile: boolean;
+  status: string;
+  managerComment?: string | null;
+  requestedAt: string;
 }
 
 export interface ServiceRoute {

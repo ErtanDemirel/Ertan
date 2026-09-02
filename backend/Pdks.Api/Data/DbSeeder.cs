@@ -162,7 +162,35 @@ public static class DbSeeder
                 ServiceStop = "Sanayi"
             };
             db.Personnel.Add(former);
+
+            // İK yöneticisi ve Fabrika müdürü (onay zinciri rolleri)
+            var hrManager = new Personnel
+            {
+                SicilNo = "1500", FirstName = "Zafer", LastName = "Koç",
+                Department = "İnsan Kaynakları", Title = "İK Yöneticisi",
+                PhoneNumber = "5556667788", IsHrManager = true, ShiftId = dayShift.Id
+            };
+            var factoryManager = new Personnel
+            {
+                SicilNo = "1000", FirstName = "Osman", LastName = "Aksoy",
+                Department = "Yönetim", Title = "Fabrika Müdürü",
+                PhoneNumber = "5557778899", IsFactoryManager = true, ShiftId = dayShift.Id
+            };
+            db.Personnel.AddRange(hrManager, factoryManager);
             await db.SaveChangesAsync();
+
+            // Departman + onay zinciri şablonu: Bölüm Yöneticisi → İK → (bilgi) Fabrika Müdürü
+            var uretim = new Department { Name = "Üretim", ManagerPersonnelId = manager.Id };
+            db.Departments.Add(uretim);
+            await db.SaveChangesAsync();
+
+            manager.DepartmentId = uretim.Id;
+            worker.DepartmentId = uretim.Id;
+            db.ApprovalStepTemplates.AddRange(
+                new ApprovalStepTemplate { DepartmentId = uretim.Id, Order = 1, Kind = ApproverKind.DepartmentManager },
+                new ApprovalStepTemplate { DepartmentId = uretim.Id, Order = 2, Kind = ApproverKind.HrManager },
+                new ApprovalStepTemplate { DepartmentId = uretim.Id, Order = 3, Kind = ApproverKind.FactoryManager, InfoOnly = true }
+            );
 
             // Örnek iş başvuruları (biri eski çalışanla aynı TCKN)
             db.JobApplications.AddRange(
@@ -191,6 +219,8 @@ public static class DbSeeder
             // Hesaplar
             var (mHash, mSalt) = hasher.Hash("Amir123!");
             var (wHash, wSalt) = hasher.Hash("Personel123!");
+            var (ikHash, ikSalt) = hasher.Hash("Ik123456!");
+            var (fmHash, fmSalt) = hasher.Hash("Mudur123!");
             db.Users.AddRange(
                 new User
                 {
@@ -201,6 +231,16 @@ public static class DbSeeder
                 {
                     Username = "personel", PasswordHash = wHash, PasswordSalt = wSalt,
                     Role = UserRole.Personnel, PersonnelId = worker.Id, PhoneNumber = worker.PhoneNumber
+                },
+                new User
+                {
+                    Username = "ik", PasswordHash = ikHash, PasswordSalt = ikSalt,
+                    Role = UserRole.Manager, PersonnelId = hrManager.Id, PhoneNumber = hrManager.PhoneNumber
+                },
+                new User
+                {
+                    Username = "mudur", PasswordHash = fmHash, PasswordSalt = fmSalt,
+                    Role = UserRole.Manager, PersonnelId = factoryManager.Id, PhoneNumber = factoryManager.PhoneNumber
                 }
             );
             await db.SaveChangesAsync();

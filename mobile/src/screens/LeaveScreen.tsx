@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
-import { leaveApi } from '../api/services';
+import { leaveApi, requestApi } from '../api/services';
 import { apiError } from '../api/client';
 import { colors } from '../theme';
 import type { LeaveRequest } from '../api/types';
@@ -18,6 +18,7 @@ const statusMeta: Record<string, { label: string; color: string }> = {
 
 export default function LeaveScreen() {
   const qc = useQueryClient();
+  const [mode, setMode] = useState<'leave' | 'advance' | 'expense'>('leave');
   const [showForm, setShowForm] = useState(false);
   const [typeId, setTypeId] = useState<number | null>(null);
   const [title, setTitle] = useState('');
@@ -77,11 +78,14 @@ export default function LeaveScreen() {
 
   const balance = mine.data?.balance;
 
+  if (mode !== 'leave') return <OtherRequests mode={mode} setMode={setMode} />;
+
   return (
     <ScrollView
       style={styles.container}
       refreshControl={<RefreshControl refreshing={mine.isFetching} onRefresh={() => mine.refetch()} />}
     >
+      <Segment mode={mode} setMode={setMode} />
       {/* Bakiye kartı */}
       <View style={styles.balanceCard}>
         <Text style={styles.balanceTitle}>Yıllık İzin Bakiyesi</Text>
@@ -196,4 +200,118 @@ const styles = StyleSheet.create({
   reqComment: { color: colors.muted, fontSize: 12, marginTop: 4, fontStyle: 'italic' },
   badge: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 3, fontSize: 12, fontWeight: '600', overflow: 'hidden' },
   cancelLink: { color: colors.danger, fontSize: 12, marginTop: 8 },
+});
+
+// ---------------- Segment (İzin / Avans / Masraf) ----------------
+function Segment({ mode, setMode }: { mode: string; setMode: (m: any) => void }) {
+  const items: { k: string; label: string }[] = [
+    { k: 'leave', label: 'İzin' }, { k: 'advance', label: 'Avans' }, { k: 'expense', label: 'Masraf' },
+  ];
+  return (
+    <View style={seg.wrap}>
+      {items.map((it) => (
+        <TouchableOpacity key={it.k} style={[seg.item, mode === it.k && seg.itemActive]} onPress={() => setMode(it.k)}>
+          <Text style={[seg.text, mode === it.k && seg.textActive]}>{it.label}</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+}
+
+const statusColors: Record<string, { label: string; color: string }> = {
+  Pending: { label: 'Bekliyor', color: colors.warning },
+  Approved: { label: 'Onaylandı', color: colors.success },
+  Rejected: { label: 'Reddedildi', color: colors.danger },
+  Cancelled: { label: 'İptal', color: colors.muted },
+};
+
+// ---------------- Avans / Masraf görünümü ----------------
+function OtherRequests({ mode, setMode }: { mode: 'advance' | 'expense'; setMode: (m: any) => void }) {
+  const qc = useQueryClient();
+  const [show, setShow] = useState(false);
+  const [amount, setAmount] = useState('');
+  const [title, setTitle] = useState('');
+  const [desc, setDesc] = useState('');
+  const [file, setFile] = useState<{ uri: string; name: string; type: string } | null>(null);
+
+  const mine = useQuery({ queryKey: ['requests-my'], queryFn: () => requestApi.my() });
+  const create = useMutation({
+    mutationFn: () => mode === 'advance'
+      ? requestApi.createAdvance(Number(amount), desc || undefined)
+      : requestApi.createExpense(Number(amount), title || undefined, desc || undefined, file),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['requests-my'] });
+      setShow(false); setAmount(''); setTitle(''); setDesc(''); setFile(null);
+      Alert.alert('Gönderildi', 'Talebiniz onay zincirine iletildi.');
+    },
+    onError: (e) => Alert.alert('Hata', apiError(e)),
+  });
+
+  async function pick() {
+    const res = await DocumentPicker.getDocumentAsync({ type: ['application/pdf', 'image/*'], copyToCacheDirectory: true });
+    if (!res.canceled && res.assets?.[0]) {
+      const a = res.assets[0];
+      setFile({ uri: a.uri, name: a.name ?? 'belge', type: a.mimeType ?? 'application/octet-stream' });
+    }
+  }
+
+  const list = mode === 'advance' ? (mine.data?.advances ?? []) : (mine.data?.expenses ?? []);
+
+  return (
+    <ScrollView style={styles.container} refreshControl={<RefreshControl refreshing={mine.isFetching} onRefresh={() => mine.refetch()} />}>
+      <Segment mode={mode} setMode={setMode} />
+
+      <TouchableOpacity style={styles.newButton} onPress={() => setShow((s) => !s)}>
+        <Text style={styles.newButtonText}>{show ? '× Vazgeç' : mode === 'advance' ? '+ Yeni Avans Talebi' : '+ Yeni Masraf Talebi'}</Text>
+      </TouchableOpacity>
+
+      {show && (
+        <View style={styles.form}>
+          <Text style={styles.label}>Tutar (₺)</Text>
+          <TextInput style={styles.input} value={amount} onChangeText={setAmount} keyboardType="numeric" placeholder="örn. 5000" placeholderTextColor={colors.muted} />
+          {mode === 'expense' && (<>
+            <Text style={styles.label}>Başlık</Text>
+            <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="örn. Yol masrafı" placeholderTextColor={colors.muted} />
+          </>)}
+          <Text style={styles.label}>Açıklama</Text>
+          <TextInput style={[styles.input, { height: 70 }]} value={desc} onChangeText={setDesc} multiline placeholder="Açıklama..." placeholderTextColor={colors.muted} />
+          {mode === 'expense' && (
+            <TouchableOpacity style={styles.fileBtn} onPress={pick}>
+              <Text style={styles.fileBtnText}>{file ? `📎 ${file.name}` : '📎 Fiş/fatura ekle'}</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={styles.submit} onPress={() => { if (!amount) return Alert.alert('Eksik', 'Tutar girin.'); create.mutate(); }} disabled={create.isPending}>
+            <Text style={styles.submitText}>{create.isPending ? 'Gönderiliyor...' : 'Talebi Gönder'}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <Text style={styles.sectionTitle}>Taleplerim</Text>
+      {list.length === 0 ? (
+        <Text style={styles.empty}>Kayıt yok.</Text>
+      ) : list.map((r: any) => {
+        const meta = statusColors[r.status] ?? { label: r.status, color: colors.muted };
+        return (
+          <View key={r.id} style={styles.reqCard}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.reqType}>{(mode === 'expense' ? (r.title ? r.title + ' — ' : '') : '')}{Number(r.amount).toLocaleString('tr-TR')} ₺</Text>
+              {r.reason ? <Text style={styles.reqDate}>{r.reason}</Text> : null}
+              {r.description ? <Text style={styles.reqDate}>{r.description}</Text> : null}
+              {r.managerComment ? <Text style={styles.reqComment}>Not: {r.managerComment}</Text> : null}
+            </View>
+            <Text style={[styles.badge, { color: meta.color, borderColor: meta.color }]}>{meta.label}</Text>
+          </View>
+        );
+      })}
+      <View style={{ height: 40 }} />
+    </ScrollView>
+  );
+}
+
+const seg = StyleSheet.create({
+  wrap: { flexDirection: 'row', backgroundColor: '#e2e8f0', borderRadius: 10, padding: 3, marginBottom: 14 },
+  item: { flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center' },
+  itemActive: { backgroundColor: '#fff' },
+  text: { color: colors.muted, fontWeight: '600', fontSize: 13 },
+  textActive: { color: colors.primary },
 });

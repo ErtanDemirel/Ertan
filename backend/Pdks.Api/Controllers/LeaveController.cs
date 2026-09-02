@@ -17,11 +17,15 @@ public class LeaveController : ControllerBase
     private readonly LeaveService _leave;
     private readonly FileStorageService _files;
     private readonly LeaveDocumentService _docs;
+    private readonly ApprovalService _approvals;
+    private readonly RequestWorkflowService _workflow;
 
     public LeaveController(AppDbContext db, LeaveService leave,
-        FileStorageService files, LeaveDocumentService docs)
+        FileStorageService files, LeaveDocumentService docs,
+        ApprovalService approvals, RequestWorkflowService workflow)
     {
         _db = db; _leave = leave; _files = files; _docs = docs;
+        _approvals = approvals; _workflow = workflow;
     }
 
     // ---------- İzin Türleri ----------
@@ -131,23 +135,6 @@ public class LeaveController : ControllerBase
         return Ok(await LoadRequestsAsync(q, ct));
     }
 
-    /// <summary>Amir: benim onayımı bekleyen talepler.</summary>
-    [HttpGet("pending")]
-    [Authorize(Roles = "Admin,Manager")]
-    public async Task<ActionResult<IEnumerable<LeaveRequestDto>>> Pending(CancellationToken ct)
-    {
-        var pid = User.GetPersonnelId();
-        var isAdmin = User.GetRole() == "Admin";
-
-        var q = _db.LeaveRequests
-            .Where(r => r.Status == LeaveStatus.Pending);
-        if (!isAdmin && pid is not null)
-            q = q.Where(r => r.ApproverId == pid);
-
-        var items = await LoadRequestsAsync(q.OrderBy(r => r.RequestedAt), ct);
-        return Ok(items);
-    }
-
     /// <summary>Panel için: bugün izinde olanlar + yaklaşan onaylı izinler.</summary>
     [HttpGet("dashboard")]
     [Authorize(Roles = "Admin,Manager")]
@@ -200,6 +187,14 @@ public class LeaveController : ControllerBase
         {
             var created = await _leave.CreateAsync(pid.Value, req.LeaveTypeId,
                 req.StartDate, req.EndDate, req.Title, req.Reason, req.Days, ct);
+
+            // Departman bazlı onay zincirini kur ve ilk onaylayanı bilgilendir
+            var chain = await _approvals.BuildChainAsync(RequestKind.Leave, created.Id, pid.Value, ct);
+            var cur = ApprovalService.CurrentStep(chain);
+            created.ApproverId = cur?.ApproverPersonnelId; // görüntü için mevcut onaylayan
+            await _db.SaveChangesAsync(ct);
+            await _workflow.HandleCreatedAsync(chain, ct);
+
             var dto = (await LoadRequestsAsync(_db.LeaveRequests.Where(r => r.Id == created.Id), ct))
                 .First();
             return Ok(dto);
@@ -210,28 +205,8 @@ public class LeaveController : ControllerBase
         }
     }
 
-    [HttpPost("requests/{id:int}/decide")]
-    [Authorize(Roles = "Admin,Manager")]
-    public async Task<IActionResult> Decide(int id, DecideLeaveRequest req, CancellationToken ct)
-    {
-        var request = await _db.LeaveRequests.FirstOrDefaultAsync(r => r.Id == id, ct);
-        if (request is null) return NotFound();
-
-        var pid = User.GetPersonnelId();
-        var isAdmin = User.GetRole() == "Admin";
-        if (!isAdmin && request.ApproverId != pid)
-            return Forbid();
-
-        try
-        {
-            await _leave.DecideAsync(request, req.Approve, req.Comment, pid ?? 0, ct);
-            return Ok(new { message = req.Approve ? "İzin onaylandı." : "İzin reddedildi." });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-    }
+    // Not: İzin onayı/reddi artık departman bazlı onay zinciri üzerinden
+    // ApprovalController (POST /api/approvals/{id}/decide) ile yapılır.
 
     [HttpPost("requests/{id:int}/cancel")]
     public async Task<IActionResult> Cancel(int id, CancellationToken ct)
@@ -246,6 +221,8 @@ public class LeaveController : ControllerBase
         try
         {
             await _leave.CancelAsync(request, ct);
+            var chain = await _approvals.GetForRequestAsync(RequestKind.Leave, id, ct);
+            if (chain is not null) await _approvals.CancelAsync(chain, ct);
             return Ok(new { message = "Talep iptal edildi." });
         }
         catch (InvalidOperationException ex)

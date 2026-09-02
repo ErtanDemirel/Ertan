@@ -11,6 +11,7 @@ import BulkShiftAssignPage from './pages/BulkShiftAssign';
 import LeavePage from './pages/LeaveManagement';
 import HolidaysPage from './pages/Holidays';
 import UsersPage from './pages/UsersPage';
+import DepartmentsPage from './pages/Departments';
 import AnnouncementsPage from './pages/Announcements';
 import MealsPage from './pages/Meals';
 import RoutesPage from './pages/ServiceRoutes';
@@ -61,6 +62,7 @@ export default function App() {
         <Route path="shift-plan" element={<ShiftPlanPage />} />
         <Route path="bulk-shift" element={<BulkShiftAssignPage />} />
         <Route path="leave" element={<LeavePage />} />
+        <Route path="departments" element={<DepartmentsPage />} />
         <Route path="payroll" element={<PayrollPage />} />
         <Route path="candidates" element={<CandidatesPage />} />
         <Route path="announcements" element={<AnnouncementsPage />} />

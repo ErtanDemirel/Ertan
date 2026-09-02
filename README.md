@@ -104,11 +104,18 @@ dotnet run
 
 **Demo hesaplar**:
 
-| Kullanıcı | Şifre        | Rol      |
-|-----------|--------------|----------|
-| admin     | Admin123!    | Yönetici |
-| amir      | Amir123!     | Amir     |
-| personel  | Personel123! | Personel |
+| Kullanıcı | Şifre        | Rol / Yetki |
+|-----------|--------------|-------------|
+| admin     | Admin123!    | Yönetici    |
+| amir      | Amir123!     | Amir (Üretim bölüm yöneticisi) |
+| ik        | Ik123456!    | İK Yöneticisi (onay zinciri) |
+| mudur     | Mudur123!    | Fabrika Müdürü (onay zinciri) |
+| bordro    | Bordro123!   | Bordro Sorumlusu (bordro yükle/dağıt) |
+| personel  | Personel123! | Personel    |
+
+> **Onay zinciri (demo):** `personel` bir izin/avans/masraf talebi açtığında sırasıyla
+> **amir (Bölüm Yöneticisi) → ik (İK) → mudur (Fabrika Müdürü, bilgi)** onayına düşer.
+> Zincir departman bazlıdır; "Onay Zinciri" ekranından adım ekleyip sıralayabilirsiniz.
 
 ### 2) Web Paneli (React)
 

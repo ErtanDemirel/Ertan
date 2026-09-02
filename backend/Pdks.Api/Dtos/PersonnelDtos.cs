@@ -21,6 +21,10 @@ public record PersonnelDto(
     string? ServiceStop,
     int? ShiftId,
     string? ShiftName,
+    int? DepartmentId,
+    string? DepartmentName,
+    bool IsHrManager,
+    bool IsFactoryManager,
     DateTime? ExitDate,
     string? ExitReason,
     bool IsActive);
@@ -39,6 +43,9 @@ public record CreatePersonnelRequest(
     int? ServiceRouteId,
     string? ServiceStop,
     int? ShiftId,
+    int? DepartmentId,
+    bool IsHrManager,
+    bool IsFactoryManager,
     // Yıllık izin hakkı (gün). Bu yıl için bakiye oluşturulur.
     decimal? AnnualLeaveDays,
     // Personele giriş hesabı oluşturulsun mu?
@@ -60,6 +67,9 @@ public record UpdatePersonnelRequest(
     int? ServiceRouteId,
     string? ServiceStop,
     int? ShiftId,
+    int? DepartmentId,
+    bool IsHrManager,
+    bool IsFactoryManager,
     DateTime? ExitDate,
     string? ExitReason,
     bool IsActive);

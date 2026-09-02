@@ -39,3 +39,29 @@ public enum ApplicationStatus
     Hired = 4,
     Rejected = 5
 }
+
+/// <summary>Onay zinciri adımının onaylayanı hangi rolden.</summary>
+public enum ApproverKind
+{
+    DepartmentManager = 0, // Bölüm/departman yöneticisi
+    HrManager = 1,         // İK yöneticisi
+    FactoryManager = 2,    // Fabrika müdürü
+    SpecificPerson = 3     // Belirli bir kişi
+}
+
+/// <summary>Talep türü (onay zinciri bunların hepsinde çalışır).</summary>
+public enum RequestKind
+{
+    Leave = 0,    // İzin
+    Advance = 1,  // Avans
+    Expense = 2   // Masraf / harcırah
+}
+
+/// <summary>Bir onay adımının durumu.</summary>
+public enum StepStatus
+{
+    Pending = 0,
+    Approved = 1,
+    Rejected = 2,
+    Skipped = 3
+}

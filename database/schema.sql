@@ -55,6 +55,9 @@ CREATE TABLE Personnel (
     ServiceRouteId INT NULL,
     ServiceStop    NVARCHAR(80) NULL,
     ShiftId        INT NULL,
+    DepartmentId   INT NULL,
+    IsHrManager    BIT NOT NULL DEFAULT 0,
+    IsFactoryManager BIT NOT NULL DEFAULT 0,
     IsActive       BIT NOT NULL DEFAULT 1,
     CreatedAt      DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
     UpdatedAt      DATETIME2 NULL,
@@ -320,4 +323,83 @@ CREATE TABLE Notifications (
     CONSTRAINT FK_Notif_User FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE
 );
 CREATE INDEX IX_Notif_User ON Notifications(UserId, IsRead);
+
+/* ---------------- Departman & Onay Zinciri ---------------- */
+CREATE TABLE Departments (
+    Id                 INT IDENTITY PRIMARY KEY,
+    Name               NVARCHAR(100) NOT NULL,
+    ManagerPersonnelId INT NULL,
+    IsActive           BIT NOT NULL DEFAULT 1,
+    CONSTRAINT FK_Dept_Manager FOREIGN KEY (ManagerPersonnelId) REFERENCES Personnel(Id)
+);
+ALTER TABLE Personnel ADD CONSTRAINT FK_Personnel_Dept FOREIGN KEY (DepartmentId) REFERENCES Departments(Id);
+
+CREATE TABLE ApprovalStepTemplates (
+    Id                  INT IDENTITY PRIMARY KEY,
+    DepartmentId        INT NOT NULL,
+    [Order]             INT NOT NULL,
+    Kind                INT NOT NULL,   -- 0=DeptManager,1=HrManager,2=FactoryManager,3=SpecificPerson
+    SpecificPersonnelId INT NULL,
+    InfoOnly            BIT NOT NULL DEFAULT 0,
+    CONSTRAINT FK_AST_Dept FOREIGN KEY (DepartmentId) REFERENCES Departments(Id) ON DELETE CASCADE,
+    CONSTRAINT FK_AST_Person FOREIGN KEY (SpecificPersonnelId) REFERENCES Personnel(Id)
+);
+CREATE INDEX IX_AST_Dept ON ApprovalStepTemplates(DepartmentId, [Order]);
+
+CREATE TABLE ApprovalRequests (
+    Id                  INT IDENTITY PRIMARY KEY,
+    Kind                INT NOT NULL,   -- 0=Leave,1=Advance,2=Expense
+    RequestId           INT NOT NULL,
+    RequesterPersonnelId INT NOT NULL,
+    Status              INT NOT NULL DEFAULT 0,
+    CreatedAt           DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    DecidedAt           DATETIME2 NULL,
+    CONSTRAINT FK_AR_Requester FOREIGN KEY (RequesterPersonnelId) REFERENCES Personnel(Id)
+);
+CREATE INDEX IX_AR_Kind_Req ON ApprovalRequests(Kind, RequestId);
+
+CREATE TABLE ApprovalSteps (
+    Id                  INT IDENTITY PRIMARY KEY,
+    ApprovalRequestId   INT NOT NULL,
+    [Order]             INT NOT NULL,
+    ApproverPersonnelId INT NULL,
+    Label               NVARCHAR(60) NOT NULL,
+    InfoOnly            BIT NOT NULL DEFAULT 0,
+    Status              INT NOT NULL DEFAULT 0,
+    Comment             NVARCHAR(500) NULL,
+    DecidedAt           DATETIME2 NULL,
+    CONSTRAINT FK_ASteps_Req FOREIGN KEY (ApprovalRequestId) REFERENCES ApprovalRequests(Id) ON DELETE CASCADE,
+    CONSTRAINT FK_ASteps_Person FOREIGN KEY (ApproverPersonnelId) REFERENCES Personnel(Id)
+);
+CREATE INDEX IX_ASteps_Req ON ApprovalSteps(ApprovalRequestId, [Order]);
+CREATE INDEX IX_ASteps_Approver ON ApprovalSteps(ApproverPersonnelId, Status);
+
+/* ---------------- Avans & Masraf ---------------- */
+CREATE TABLE AdvanceRequests (
+    Id             INT IDENTITY PRIMARY KEY,
+    PersonnelId    INT NOT NULL,
+    Amount         DECIMAL(12,2) NOT NULL,
+    Reason         NVARCHAR(500) NULL,
+    Status         INT NOT NULL DEFAULT 0,
+    ManagerComment NVARCHAR(500) NULL,
+    RequestedAt    DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    DecidedAt      DATETIME2 NULL,
+    CONSTRAINT FK_Adv_Personnel FOREIGN KEY (PersonnelId) REFERENCES Personnel(Id) ON DELETE CASCADE
+);
+
+CREATE TABLE ExpenseRequests (
+    Id             INT IDENTITY PRIMARY KEY,
+    PersonnelId    INT NOT NULL,
+    Amount         DECIMAL(12,2) NOT NULL,
+    Title          NVARCHAR(150) NULL,
+    [Description]  NVARCHAR(500) NULL,
+    FileName       NVARCHAR(200) NULL,
+    StoredPath     NVARCHAR(300) NULL,
+    ContentType    NVARCHAR(100) NULL,
+    Status         INT NOT NULL DEFAULT 0,
+    ManagerComment NVARCHAR(500) NULL,
+    RequestedAt    DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    DecidedAt      DATETIME2 NULL,
+    CONSTRAINT FK_Exp_Personnel FOREIGN KEY (PersonnelId) REFERENCES Personnel(Id) ON DELETE CASCADE
+);
 GO

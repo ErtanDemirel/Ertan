@@ -1,62 +1,64 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, Paperclip } from 'lucide-react';
-import { leaveApi, downloadFile } from '../../api/services';
+import { leaveApi, requestApi, downloadFile } from '../../api/services';
 import type { LeaveRequest } from '../../api/types';
 import { apiError } from '../../api/client';
 import { Field, Spinner, StatusBadge } from '../../components/ui';
 
-const emptyForm = { leaveTypeId: '', title: '', startDate: '', endDate: '', days: '', reason: '' };
+type Tab = 'leave' | 'advance' | 'expense';
 
-export default function SelfLeave() {
+export default function SelfRequests() {
+  const [tab, setTab] = useState<Tab>('leave');
+  const tabs: { k: Tab; label: string }[] = [
+    { k: 'leave', label: 'İzin' }, { k: 'advance', label: 'Avans' }, { k: 'expense', label: 'Masraf' },
+  ];
+  return (
+    <div className="space-y-4">
+      <h2 className="text-lg font-semibold text-slate-800">Taleplerim</h2>
+      <div className="flex gap-1 rounded-lg bg-slate-200 p-1">
+        {tabs.map((t) => (
+          <button key={t.k} onClick={() => setTab(t.k)}
+            className={`flex-1 rounded-md py-2 text-sm font-medium ${tab === t.k ? 'bg-white text-brand-700 shadow' : 'text-slate-500'}`}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+      {tab === 'leave' && <LeaveTab />}
+      {tab === 'advance' && <AdvanceTab />}
+      {tab === 'expense' && <ExpenseTab />}
+    </div>
+  );
+}
+
+// ---------------- İzin ----------------
+const emptyLeave = { leaveTypeId: '', title: '', startDate: '', endDate: '', days: '', reason: '' };
+function LeaveTab() {
   const qc = useQueryClient();
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ ...emptyForm });
+  const [show, setShow] = useState(false);
+  const [form, setForm] = useState({ ...emptyLeave });
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState('');
-
   const types = useQuery({ queryKey: ['leave-types'], queryFn: () => leaveApi.types() });
   const mine = useQuery({ queryKey: ['leave-my'], queryFn: () => leaveApi.my() });
 
   const create = useMutation({
     mutationFn: async () => {
       const created = await leaveApi.create({
-        leaveTypeId: Number(form.leaveTypeId),
-        startDate: form.startDate,
-        endDate: form.endDate,
-        title: form.title || null,
-        reason: form.reason || null,
-        days: form.days ? Number(form.days) : null,
+        leaveTypeId: Number(form.leaveTypeId), startDate: form.startDate, endDate: form.endDate,
+        title: form.title || null, reason: form.reason || null, days: form.days ? Number(form.days) : null,
       });
       if (file) await leaveApi.uploadAttachment(created.id, file);
-      return created;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['leave-my'] });
-      setShowForm(false); setForm({ ...emptyForm }); setFile(null);
-    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['leave-my'] }); setShow(false); setForm({ ...emptyLeave }); setFile(null); },
     onError: (e) => setError(apiError(e)),
   });
-
-  const cancel = useMutation({
-    mutationFn: (id: number) => leaveApi.cancel(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['leave-my'] }),
-    onError: (e) => alert(apiError(e)),
-  });
-
+  const cancel = useMutation({ mutationFn: (id: number) => leaveApi.cancel(id), onSuccess: () => qc.invalidateQueries({ queryKey: ['leave-my'] }), onError: (e) => alert(apiError(e)) });
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
-  function submit() {
-    setError('');
-    if (!form.leaveTypeId) return setError('İzin türü seçin.');
-    if (!form.startDate || !form.endDate) return setError('Tarihleri seçin.');
-    create.mutate();
-  }
-
   const balance = mine.data?.balance;
 
   return (
     <div className="space-y-4">
-      {/* Bakiye */}
       <div className="card bg-brand-600 p-5 text-white">
         <div className="text-sm text-brand-100">Yıllık İzin Bakiyesi</div>
         {balance ? (
@@ -66,12 +68,8 @@ export default function SelfLeave() {
           </>
         ) : <div className="text-sm text-brand-100">Bakiye tanımlı değil.</div>}
       </div>
-
-      <button className="btn-secondary w-full" onClick={() => { setError(''); setShowForm((s) => !s); }}>
-        {showForm ? 'Vazgeç' : <><Plus size={16} /> Yeni İzin Talebi</>}
-      </button>
-
-      {showForm && (
+      <button className="btn-secondary w-full" onClick={() => { setError(''); setShow((s) => !s); }}>{show ? 'Vazgeç' : <><Plus size={16} /> Yeni İzin Talebi</>}</button>
+      {show && (
         <div className="card p-5">
           {error && <div className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</div>}
           <div className="space-y-3">
@@ -81,48 +79,113 @@ export default function SelfLeave() {
                 {types.data?.map((t) => <option key={t.id} value={t.id}>{t.name}{t.deductsFromAnnual ? ' (yıllıktan düşer)' : ''}</option>)}
               </select>
             </Field>
-            <Field label="Talep Başlığı"><input className="input" value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="örn. Yıllık izin talebi" /></Field>
+            <Field label="Talep Başlığı"><input className="input" value={form.title} onChange={(e) => set('title', e.target.value)} /></Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Başlangıç *"><input type="date" className="input" value={form.startDate} onChange={(e) => set('startDate', e.target.value)} /></Field>
               <Field label="Bitiş *"><input type="date" className="input" value={form.endDate} onChange={(e) => set('endDate', e.target.value)} /></Field>
             </div>
-            <Field label="Kullanılan Gün" hint="Boş bırakırsanız hafta sonları hariç otomatik hesaplanır"><input type="number" className="input" value={form.days} onChange={(e) => set('days', e.target.value)} /></Field>
+            <Field label="Kullanılan Gün" hint="Boşsa hafta sonu + resmî tatil hariç otomatik hesaplanır"><input type="number" className="input" value={form.days} onChange={(e) => set('days', e.target.value)} /></Field>
             <Field label="Açıklama"><textarea className="input" rows={2} value={form.reason} onChange={(e) => set('reason', e.target.value)} /></Field>
-            <Field label="Dosya (rapor/foto/PDF)" hint="En fazla 10 MB">
-              <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="input" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-            </Field>
-            <button className="btn-primary w-full" onClick={submit} disabled={create.isPending}>
-              {create.isPending ? 'Gönderiliyor...' : 'Talebi Gönder'}
-            </button>
+            <Field label="Dosya (rapor/foto/PDF)"><input type="file" accept=".pdf,.jpg,.jpeg,.png" className="input" onChange={(e) => setFile(e.target.files?.[0] ?? null)} /></Field>
+            <button className="btn-primary w-full" onClick={() => create.mutate()} disabled={create.isPending}>{create.isPending ? 'Gönderiliyor...' : 'Gönder'}</button>
           </div>
         </div>
       )}
-
-      <h3 className="pt-2 text-base font-semibold text-slate-700">Taleplerim</h3>
-      {mine.isLoading ? <Spinner /> : (mine.data?.requests.length ?? 0) === 0 ? (
-        <p className="text-sm text-slate-400">Henüz izin talebiniz yok.</p>
-      ) : (
+      {mine.isLoading ? <Spinner /> : (mine.data?.requests.length ?? 0) === 0 ? <p className="text-sm text-slate-400">İzin talebiniz yok.</p> : (
         <div className="space-y-2">
           {mine.data!.requests.map((r: LeaveRequest) => (
             <div key={r.id} className="card p-4">
               <div className="flex items-start justify-between">
-                <div>
-                  <div className="font-medium text-slate-800">{r.title || r.leaveTypeName}</div>
-                  <div className="text-sm text-slate-500">{r.leaveTypeName} • {r.startDate} → {r.endDate} ({r.totalDays} gün)</div>
-                </div>
+                <div><div className="font-medium text-slate-800">{r.title || r.leaveTypeName}</div>
+                  <div className="text-sm text-slate-500">{r.leaveTypeName} • {r.startDate} → {r.endDate} ({r.totalDays} gün)</div></div>
                 <StatusBadge status={r.status} />
               </div>
-              {r.managerComment && <div className="mt-2 text-xs italic text-slate-400">Amir: {r.managerComment}</div>}
+              {r.managerComment && <div className="mt-2 text-xs italic text-slate-400">Not: {r.managerComment}</div>}
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 {r.attachments?.map((at) => (
-                  <button key={at.id} className="btn-secondary !py-1 !text-xs" onClick={() => downloadFile(leaveApi.attachmentUrl(at.id), at.fileName)}>
-                    <Paperclip size={12} /> {at.fileName}
-                  </button>
+                  <button key={at.id} className="btn-secondary !py-1 !text-xs" onClick={() => downloadFile(leaveApi.attachmentUrl(at.id), at.fileName)}><Paperclip size={12} /> {at.fileName}</button>
                 ))}
-                {r.status === 'Pending' && (
-                  <button className="text-xs text-red-500 hover:underline" onClick={() => cancel.mutate(r.id)}>İptal et</button>
-                )}
+                {r.status === 'Pending' && <button className="text-xs text-red-500 hover:underline" onClick={() => cancel.mutate(r.id)}>İptal et</button>}
               </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------- Avans ----------------
+function AdvanceTab() {
+  const qc = useQueryClient();
+  const [show, setShow] = useState(false);
+  const [amount, setAmount] = useState('');
+  const [reason, setReason] = useState('');
+  const mine = useQuery({ queryKey: ['requests-my'], queryFn: () => requestApi.my() });
+  const create = useMutation({
+    mutationFn: () => requestApi.createAdvance(Number(amount), reason || undefined),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['requests-my'] }); setShow(false); setAmount(''); setReason(''); },
+    onError: (e) => alert(apiError(e)),
+  });
+  return (
+    <div className="space-y-4">
+      <button className="btn-secondary w-full" onClick={() => setShow((s) => !s)}>{show ? 'Vazgeç' : <><Plus size={16} /> Yeni Avans Talebi</>}</button>
+      {show && (
+        <div className="card space-y-3 p-5">
+          <Field label="Tutar (₺) *"><input type="number" className="input" value={amount} onChange={(e) => setAmount(e.target.value)} /></Field>
+          <Field label="Açıklama"><textarea className="input" rows={2} value={reason} onChange={(e) => setReason(e.target.value)} /></Field>
+          <button className="btn-primary w-full" onClick={() => create.mutate()} disabled={create.isPending || !amount}>Gönder</button>
+        </div>
+      )}
+      {mine.isLoading ? <Spinner /> : (mine.data?.advances.length ?? 0) === 0 ? <p className="text-sm text-slate-400">Avans talebiniz yok.</p> : (
+        <div className="space-y-2">
+          {mine.data!.advances.map((a) => (
+            <div key={a.id} className="card flex items-center justify-between p-4">
+              <div><div className="font-semibold text-slate-800">{a.amount.toLocaleString('tr-TR')} ₺</div>
+                {a.reason && <div className="text-sm text-slate-500">{a.reason}</div>}
+                {a.managerComment && <div className="text-xs italic text-slate-400">Not: {a.managerComment}</div>}</div>
+              <StatusBadge status={a.status} />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------- Masraf ----------------
+function ExpenseTab() {
+  const qc = useQueryClient();
+  const [show, setShow] = useState(false);
+  const [form, setForm] = useState({ amount: '', title: '', description: '' });
+  const [file, setFile] = useState<File | null>(null);
+  const mine = useQuery({ queryKey: ['requests-my'], queryFn: () => requestApi.my() });
+  const create = useMutation({
+    mutationFn: () => requestApi.createExpense({ amount: Number(form.amount), title: form.title || undefined, description: form.description || undefined, file: file || undefined }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['requests-my'] }); setShow(false); setForm({ amount: '', title: '', description: '' }); setFile(null); },
+    onError: (e) => alert(apiError(e)),
+  });
+  const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
+  return (
+    <div className="space-y-4">
+      <button className="btn-secondary w-full" onClick={() => setShow((s) => !s)}>{show ? 'Vazgeç' : <><Plus size={16} /> Yeni Masraf Talebi</>}</button>
+      {show && (
+        <div className="card space-y-3 p-5">
+          <Field label="Tutar (₺) *"><input type="number" className="input" value={form.amount} onChange={(e) => set('amount', e.target.value)} /></Field>
+          <Field label="Başlık"><input className="input" value={form.title} onChange={(e) => set('title', e.target.value)} /></Field>
+          <Field label="Açıklama"><textarea className="input" rows={2} value={form.description} onChange={(e) => set('description', e.target.value)} /></Field>
+          <Field label="Fiş / Fatura (PDF/foto)"><input type="file" accept=".pdf,.jpg,.jpeg,.png" className="input" onChange={(e) => setFile(e.target.files?.[0] ?? null)} /></Field>
+          <button className="btn-primary w-full" onClick={() => create.mutate()} disabled={create.isPending || !form.amount}>Gönder</button>
+        </div>
+      )}
+      {mine.isLoading ? <Spinner /> : (mine.data?.expenses.length ?? 0) === 0 ? <p className="text-sm text-slate-400">Masraf talebiniz yok.</p> : (
+        <div className="space-y-2">
+          {mine.data!.expenses.map((e) => (
+            <div key={e.id} className="card flex items-center justify-between p-4">
+              <div><div className="font-semibold text-slate-800">{e.title || 'Masraf'} — {e.amount.toLocaleString('tr-TR')} ₺</div>
+                {e.description && <div className="text-sm text-slate-500">{e.description}</div>}
+                {e.hasFile && <button className="mt-1 text-xs text-brand-600 hover:underline" onClick={() => downloadFile(requestApi.expenseFileUrl(e.id), 'belge')}>Belgeyi indir</button>}</div>
+              <StatusBadge status={e.status} />
             </div>
           ))}
         </div>

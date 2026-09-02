@@ -1,8 +1,9 @@
 import { api } from './client';
 import type {
-  Announcement, AnnouncementReadStat, AppNotification, Attendance, AuthResponse,
-  Holiday, JobApplication, LeaveBalance, LeaveRequest, LeaveType, MealMenu, Paged,
-  Payslip, Personnel, QrPayload, ServiceAnalytics, ServiceRoute, Shift, WorkLocation,
+  AdvanceRequest, Announcement, AnnouncementReadStat, AppNotification, ApprovalTemplateStep,
+  Attendance, AuthResponse, Department, ExpenseRequest, Holiday, JobApplication, LeaveBalance,
+  LeaveRequest, LeaveType, MealMenu, Paged, Payslip, PendingApproval, Personnel, QrPayload,
+  ServiceAnalytics, ServiceRoute, Shift, WorkLocation,
 } from './types';
 
 /** Yetki başlıklı dosya indirir ve tarayıcıda kaydettirir. */
@@ -94,12 +95,9 @@ export const leaveApi = {
   setBalance: (b: unknown) => api.post<LeaveBalance>('/api/leave/balances', b).then((r) => r.data),
   requests: (status?: string) =>
     api.get<LeaveRequest[]>('/api/leave/requests', { params: { status } }).then((r) => r.data),
-  pending: () => api.get<LeaveRequest[]>('/api/leave/pending').then((r) => r.data),
   dashboard: (days = 14) => api.get<{ onLeave: any[]; upcoming: any[] }>('/api/leave/dashboard', { params: { days } }).then((r) => r.data),
   my: () => api.get<{ requests: LeaveRequest[]; balance: LeaveBalance | null }>('/api/leave/my').then((r) => r.data),
   create: (b: unknown) => api.post<LeaveRequest>('/api/leave/requests', b).then((r) => r.data),
-  decide: (id: number, approve: boolean, comment?: string) =>
-    api.post(`/api/leave/requests/${id}/decide`, { approve, comment }).then((r) => r.data),
   cancel: (id: number) => api.post(`/api/leave/requests/${id}/cancel`).then((r) => r.data),
   uploadAttachment: (id: number, file: File) => {
     const fd = new FormData();
@@ -108,6 +106,42 @@ export const leaveApi = {
   },
   attachmentUrl: (attachmentId: number) => `/api/leave/attachments/${attachmentId}`,
   documentUrl: (id: number) => `/api/leave/requests/${id}/document`,
+};
+
+// ---------------- Onaylar (izin/avans/masraf) ----------------
+export const approvalApi = {
+  pending: () => api.get<PendingApproval[]>('/api/approvals/pending').then((r) => r.data),
+  decide: (approvalRequestId: number, approve: boolean, comment?: string) =>
+    api.post(`/api/approvals/${approvalRequestId}/decide`, { approve, comment }).then((r) => r.data),
+};
+
+// ---------------- Departmanlar & Onay Zinciri ----------------
+export const departmentApi = {
+  list: () => api.get<Department[]>('/api/departments').then((r) => r.data),
+  create: (b: { name: string; managerPersonnelId?: number | null; isActive: boolean }) =>
+    api.post<Department>('/api/departments', b).then((r) => r.data),
+  update: (id: number, b: { name: string; managerPersonnelId?: number | null; isActive: boolean }) =>
+    api.put(`/api/departments/${id}`, b).then((r) => r.data),
+  remove: (id: number) => api.delete(`/api/departments/${id}`).then((r) => r.data),
+  template: (id: number) => api.get<ApprovalTemplateStep[]>(`/api/departments/${id}/template`).then((r) => r.data),
+  saveTemplate: (id: number, steps: { kind: string; specificPersonnelId?: number | null; infoOnly: boolean }[]) =>
+    api.put(`/api/departments/${id}/template`, { steps }).then((r) => r.data),
+};
+
+// ---------------- Avans / Masraf ----------------
+export const requestApi = {
+  my: () => api.get<{ advances: AdvanceRequest[]; expenses: ExpenseRequest[] }>('/api/requests/my').then((r) => r.data),
+  createAdvance: (amount: number, reason?: string) =>
+    api.post<AdvanceRequest>('/api/requests/advance', { amount, reason }).then((r) => r.data),
+  createExpense: (data: { amount: number; title?: string; description?: string; file?: File }) => {
+    const fd = new FormData();
+    fd.append('amount', String(data.amount));
+    if (data.title) fd.append('title', data.title);
+    if (data.description) fd.append('description', data.description);
+    if (data.file) fd.append('file', data.file);
+    return api.post<ExpenseRequest>('/api/requests/expense', fd).then((r) => r.data);
+  },
+  expenseFileUrl: (id: number) => `/api/requests/expense/${id}/file`,
 };
 
 // ---------------- Bordro ----------------

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Users, CalendarClock, CalendarCheck2, ClipboardCheck, Umbrella } from 'lucide-react';
-import { personnelApi, shiftApi, leaveApi, attendanceApi } from '../api/services';
-import { Spinner, StatusBadge } from '../components/ui';
+import { personnelApi, shiftApi, leaveApi, attendanceApi, approvalApi } from '../api/services';
+import { Spinner } from '../components/ui';
 
 function StatCard({ icon: Icon, label, value, tint }: any) {
   return (
@@ -21,7 +21,7 @@ export default function Dashboard() {
   const today = new Date().toISOString().slice(0, 10);
   const personnel = useQuery({ queryKey: ['dash-personnel'], queryFn: () => personnelApi.list({ pageSize: 1 }) });
   const shifts = useQuery({ queryKey: ['dash-shifts'], queryFn: () => shiftApi.list() });
-  const pending = useQuery({ queryKey: ['dash-pending'], queryFn: () => leaveApi.pending() });
+  const pending = useQuery({ queryKey: ['dash-pending'], queryFn: () => approvalApi.pending() });
   const leaveDash = useQuery({ queryKey: ['dash-leave'], queryFn: () => leaveApi.dashboard(14) });
   const todayAtt = useQuery({ queryKey: ['dash-att', today], queryFn: () => attendanceApi.list({ from: today, to: today }) });
 
@@ -78,9 +78,9 @@ export default function Dashboard() {
       </div>
 
       <div className="card p-5">
-        <h3 className="mb-4 text-base font-semibold text-slate-700">Onay Bekleyen İzin Talepleri</h3>
+        <h3 className="mb-4 text-base font-semibold text-slate-700">Onayımı Bekleyen Talepler</h3>
         {(pending.data?.length ?? 0) === 0 ? (
-          <p className="text-sm text-slate-400">Bekleyen izin talebi yok.</p>
+          <p className="text-sm text-slate-400">Onayınızı bekleyen talep yok.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200">
@@ -88,19 +88,17 @@ export default function Dashboard() {
                 <tr>
                   <th className="th">Personel</th>
                   <th className="th">Tür</th>
-                  <th className="th">Tarih</th>
-                  <th className="th">Gün</th>
-                  <th className="th">Durum</th>
+                  <th className="th">Özet</th>
+                  <th className="th">Adım</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {pending.data!.map((r) => (
-                  <tr key={r.id}>
-                    <td className="td font-medium">{r.personnelName}</td>
-                    <td className="td">{r.leaveTypeName}</td>
-                    <td className="td">{r.startDate} → {r.endDate}</td>
-                    <td className="td">{r.totalDays}</td>
-                    <td className="td"><StatusBadge status={r.status} /></td>
+                  <tr key={r.approvalRequestId}>
+                    <td className="td font-medium">{r.requesterName}</td>
+                    <td className="td"><span className="badge bg-slate-100 text-slate-600">{r.kindLabel}</span></td>
+                    <td className="td">{r.title ? `${r.title} — ` : ''}{r.summary}</td>
+                    <td className="td text-slate-500">{r.currentStepLabel}</td>
                   </tr>
                 ))}
               </tbody>

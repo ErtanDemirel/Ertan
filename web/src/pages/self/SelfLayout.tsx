@@ -3,7 +3,7 @@ import { CalendarDays, Megaphone, UtensilsCrossed, Wallet, Bus, LogOut, ShieldCh
 import { useAuth } from '../../auth/AuthContext';
 
 const tabs = [
-  { to: '/me/leave', label: 'İzin Talebim', icon: CalendarDays },
+  { to: '/me/leave', label: 'Taleplerim', icon: CalendarDays },
   { to: '/me/announcements', label: 'Duyurular', icon: Megaphone },
   { to: '/me/meals', label: 'Yemek', icon: UtensilsCrossed },
   { to: '/me/payroll', label: 'Bordrom', icon: Wallet },

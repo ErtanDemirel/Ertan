@@ -40,6 +40,7 @@ public class PersonnelController : ControllerBase
             .Include(p => p.Manager)
             .Include(p => p.ServiceRoute)
             .Include(p => p.Shift)
+            .Include(p => p.Dept)
             .AsNoTracking()
             .AsQueryable();
 
@@ -71,7 +72,7 @@ public class PersonnelController : ControllerBase
     public async Task<ActionResult<PersonnelDto>> Get(int id, CancellationToken ct)
     {
         var p = await _db.Personnel
-            .Include(x => x.Manager).Include(x => x.ServiceRoute).Include(x => x.Shift)
+            .Include(x => x.Manager).Include(x => x.ServiceRoute).Include(x => x.Shift).Include(x => x.Dept)
             .AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
         return p is null ? NotFound() : Ok(ToDto(p));
     }
@@ -97,6 +98,9 @@ public class PersonnelController : ControllerBase
             ServiceRouteId = req.ServiceRouteId,
             ServiceStop = req.ServiceStop,
             ShiftId = req.ShiftId,
+            DepartmentId = req.DepartmentId,
+            IsHrManager = req.IsHrManager,
+            IsFactoryManager = req.IsFactoryManager,
             IsActive = true
         };
         _db.Personnel.Add(p);
@@ -163,6 +167,9 @@ public class PersonnelController : ControllerBase
         p.ServiceRouteId = req.ServiceRouteId;
         p.ServiceStop = req.ServiceStop;
         p.ShiftId = req.ShiftId;
+        p.DepartmentId = req.DepartmentId;
+        p.IsHrManager = req.IsHrManager;
+        p.IsFactoryManager = req.IsFactoryManager;
         p.ExitDate = req.ExitDate;
         p.ExitReason = req.ExitReason;
         p.IsActive = req.IsActive;
@@ -204,5 +211,7 @@ public class PersonnelController : ControllerBase
         p.NationalId, p.Department, p.Title, p.PhoneNumber, p.Email, p.HireDate,
         p.ManagerId, p.Manager is null ? null : $"{p.Manager.FirstName} {p.Manager.LastName}",
         p.ServiceRouteId, p.ServiceRoute?.Name, p.ServiceStop,
-        p.ShiftId, p.Shift?.Name, p.ExitDate, p.ExitReason, p.IsActive);
+        p.ShiftId, p.Shift?.Name,
+        p.DepartmentId, p.Dept?.Name, p.IsHrManager, p.IsFactoryManager,
+        p.ExitDate, p.ExitReason, p.IsActive);
 }
