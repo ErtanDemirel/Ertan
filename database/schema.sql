@@ -48,6 +48,9 @@ CREATE TABLE Personnel (
     Title          NVARCHAR(80) NULL,
     PhoneNumber    NVARCHAR(20) NULL,
     Email          NVARCHAR(120) NULL,
+    Address        NVARCHAR(250) NULL,
+    EmergencyContactName  NVARCHAR(100) NULL,
+    EmergencyContactPhone NVARCHAR(20) NULL,
     HireDate       DATETIME2 NULL,
     ExitDate       DATETIME2 NULL,
     ExitReason     NVARCHAR(200) NULL,
@@ -357,6 +360,25 @@ CREATE TABLE FeedbackItems (
     CONSTRAINT FK_FB_Handler FOREIGN KEY (HandledByUserId) REFERENCES Users(Id)
 );
 CREATE INDEX IX_FB_KindStatus ON FeedbackItems(Kind, Status);
+
+/* ---------------- İletişim / acil durum güncelleme talepleri ---------------- */
+CREATE TABLE ContactUpdateRequests (
+    Id              INT IDENTITY PRIMARY KEY,
+    PersonnelId     INT NOT NULL,
+    PhoneNumber           NVARCHAR(20) NULL,
+    Email                 NVARCHAR(120) NULL,
+    Address               NVARCHAR(250) NULL,
+    EmergencyContactName  NVARCHAR(100) NULL,
+    EmergencyContactPhone NVARCHAR(20) NULL,
+    Status          INT NOT NULL DEFAULT 0,   -- 0=Bekliyor,1=Onaylandı,2=Reddedildi
+    HandlerComment  NVARCHAR(500) NULL,
+    HandledByUserId INT NULL,
+    CreatedAt       DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    HandledAt       DATETIME2 NULL,
+    CONSTRAINT FK_CUR_Personnel FOREIGN KEY (PersonnelId) REFERENCES Personnel(Id) ON DELETE CASCADE,
+    CONSTRAINT FK_CUR_Handler FOREIGN KEY (HandledByUserId) REFERENCES Users(Id)
+);
+CREATE INDEX IX_CUR_PersonnelStatus ON ContactUpdateRequests(PersonnelId, Status);
 
 /* ---------------- Departman & Onay Zinciri ---------------- */
 CREATE TABLE Departments (

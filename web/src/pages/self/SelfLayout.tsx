@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { CalendarDays, Megaphone, UtensilsCrossed, Wallet, Bus, LogOut, ShieldCheck, MessagesSquare, Users, Clock, Calculator } from 'lucide-react';
+import { CalendarDays, Megaphone, UtensilsCrossed, Wallet, Bus, LogOut, ShieldCheck, MessagesSquare, Users, Clock, Calculator, Phone } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
 
 const tabs = [
@@ -12,6 +12,7 @@ const tabs = [
   { to: '/me/voice', label: 'Çalışan Sesi', icon: MessagesSquare },
   { to: '/me/directory', label: 'Rehber', icon: Users },
   { to: '/me/calc', label: 'Hesaplama', icon: Calculator },
+  { to: '/me/contact', label: 'İletişim Bilgilerim', icon: Phone },
 ];
 
 export default function SelfLayout() {

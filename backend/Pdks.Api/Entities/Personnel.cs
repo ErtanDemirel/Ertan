@@ -43,6 +43,16 @@ public class Personnel
     [MaxLength(120)]
     public string? Email { get; set; }
 
+    [MaxLength(250)]
+    public string? Address { get; set; }
+
+    /// <summary>Acil durumda ulaşılacak kişi.</summary>
+    [MaxLength(100)]
+    public string? EmergencyContactName { get; set; }
+
+    [MaxLength(20)]
+    public string? EmergencyContactPhone { get; set; }
+
     public DateTime? HireDate { get; set; }
 
     /// <summary>İşten çıkış tarihi (boşsa halen çalışıyor). Aday eşleştirmede kullanılır.</summary>

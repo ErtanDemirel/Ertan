@@ -120,6 +120,22 @@ export const voiceApi = {
     api.post<Feedback>('/api/voice', b).then((r) => r.data),
 };
 
+export interface ContactUpdate {
+  id: number; personnelName: string; phoneNumber?: string | null; email?: string | null;
+  address?: string | null; emergencyContactName?: string | null; emergencyContactPhone?: string | null;
+  status: 'Pending' | 'Approved' | 'Rejected'; handlerComment?: string | null; createdAt: string; handledAt?: string | null;
+}
+export interface ContactInfo {
+  phoneNumber?: string | null; email?: string | null; address?: string | null;
+  emergencyContactName?: string | null; emergencyContactPhone?: string | null;
+  pending?: ContactUpdate | null;
+}
+export const contactApi = {
+  mine: () => api.get<ContactInfo>('/api/me/contact').then((r) => r.data),
+  create: (b: { phoneNumber?: string; email?: string; address?: string; emergencyContactName?: string; emergencyContactPhone?: string }) =>
+    api.post<ContactUpdate>('/api/me/contact-requests', b).then((r) => r.data),
+};
+
 export interface MyService {
   mine: { routeName?: string | null; stop?: string | null; departure?: string | null; ret?: string | null; driver?: string | null; plate?: string | null } | null;
   routes: { name: string; stops?: string | null; departure?: string | null; ret?: string | null }[];

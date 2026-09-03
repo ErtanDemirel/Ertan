@@ -47,6 +47,7 @@ export default function MoreScreen() {
     {
       header: 'Kişisel',
       items: [
+        { icon: 'call-outline', title: 'İletişim bilgilerim', sub: 'Adres & acil durum', go: 'Contact' },
         { icon: 'document-text-outline', title: 'Notlarım', sub: 'Kişisel notlar', go: 'Notes' },
         { icon: 'notifications-outline', title: 'Bildirimler', sub: 'Tüm bildirimler', go: 'Notifications' },
         { icon: 'person-outline', title: 'Profilim', sub: 'Hesap & güvenlik', go: 'Profilim' },

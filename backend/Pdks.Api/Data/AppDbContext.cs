@@ -36,6 +36,7 @@ public class AppDbContext : DbContext
     public DbSet<AdvanceRequest> AdvanceRequests => Set<AdvanceRequest>();
     public DbSet<ExpenseRequest> ExpenseRequests => Set<ExpenseRequest>();
     public DbSet<FeedbackItem> FeedbackItems => Set<FeedbackItem>();
+    public DbSet<ContactUpdateRequest> ContactUpdateRequests => Set<ContactUpdateRequest>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -284,6 +285,14 @@ public class AppDbContext : DbContext
         {
             e.HasIndex(x => new { x.Kind, x.Status });
             e.HasOne(x => x.Personnel).WithMany().HasForeignKey(x => x.PersonnelId).OnDelete(DeleteBehavior.SetNull);
+            e.HasOne(x => x.HandledBy).WithMany().HasForeignKey(x => x.HandledByUserId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ---- ContactUpdateRequest ----
+        b.Entity<ContactUpdateRequest>(e =>
+        {
+            e.HasIndex(x => new { x.PersonnelId, x.Status });
+            e.HasOne(x => x.Personnel).WithMany().HasForeignKey(x => x.PersonnelId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(x => x.HandledBy).WithMany().HasForeignKey(x => x.HandledByUserId).OnDelete(DeleteBehavior.SetNull);
         });
     }

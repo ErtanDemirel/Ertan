@@ -68,6 +68,7 @@ yönetim paneli ve Expo/React Native mobil uygulama.
 | **Çalışan Sesi** | Personel **öneri / şikayet / ramak kala (iş güvenliği) / dilek** gönderir (isteğe bağlı **anonim**); Amir/Admin görüntüler, durum (Yeni→İnceleniyor→Çözüldü) ve yanıt yazar. Web + mobil. |
 | **Şirket rehberi & Mesai geçmişim** | Web self-servis ve mobilde: çalışan dizini (ara, telefon/e-posta) ve kişinin kendi mesai giriş/çıkış geçmişi + aylık özet. |
 | **Hesaplama araçları** | Web + mobil, saf istemci: **fazla mesai** (%25/%50/%100 zam) ve **kıdem/ihbar tazminatı** (brüt tahmini). |
+| **İletişim & acil durum güncelleme** | Personel telefon/e-posta/adres + **acil durum kişisi**ni günceller; **İK/amir onayından** sonra karta işlenir. Web + mobil. |
 | **Güvenli şema güncelleme** | `EnsureCreated` + idempotent `DbMaintenance` uyumlayıcı: mevcut veritabanı veri kaybı olmadan yeni kolon/tablo alır. Üretim için EF Core migration'a hazır (bkz. `database/migrations/`). |
 
 ### Eklediğim "olmazsa olmaz" güvenlik/işlevsellik

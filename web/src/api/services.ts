@@ -295,3 +295,14 @@ export const selfAttendanceApi = {
   my: (from?: string, to?: string) =>
     api.get<Attendance[]>('/api/attendance/my', { params: { from, to } }).then((r) => r.data),
 };
+
+// ---------------- İletişim / Acil durum (İK onaylı) ----------------
+export const contactApi = {
+  mine: () => api.get<import('./types').ContactInfo>('/api/me/contact').then((r) => r.data),
+  createRequest: (b: { phoneNumber?: string; email?: string; address?: string; emergencyContactName?: string; emergencyContactPhone?: string }) =>
+    api.post<import('./types').ContactUpdate>('/api/me/contact-requests', b).then((r) => r.data),
+  pending: (status?: string) =>
+    api.get<import('./types').ContactUpdate[]>('/api/contact-requests', { params: { status } }).then((r) => r.data),
+  decide: (id: number, approve: boolean, comment?: string) =>
+    api.post<import('./types').ContactUpdate>(`/api/contact-requests/${id}/decide`, { approve, comment }).then((r) => r.data),
+};

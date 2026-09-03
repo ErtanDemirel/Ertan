@@ -367,3 +367,27 @@ export interface DirectoryEntry {
   phone?: string | null;
   email?: string | null;
 }
+
+export interface ContactUpdate {
+  id: number;
+  personnelId: number;
+  personnelName: string;
+  sicilNo?: string | null;
+  phoneNumber?: string | null;
+  email?: string | null;
+  address?: string | null;
+  emergencyContactName?: string | null;
+  emergencyContactPhone?: string | null;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  handlerComment?: string | null;
+  createdAt: string;
+  handledAt?: string | null;
+}
+export interface ContactInfo {
+  phoneNumber?: string | null;
+  email?: string | null;
+  address?: string | null;
+  emergencyContactName?: string | null;
+  emergencyContactPhone?: string | null;
+  pending?: ContactUpdate | null;
+}
