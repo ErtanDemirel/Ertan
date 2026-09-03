@@ -11,8 +11,9 @@ namespace Pdks.Api.Services;
 /// </summary>
 public class PayrollPdfService
 {
-    // Ardışık 11 haneli sayı (TC adayı)
+    // Tekil 11 haneli sayı (TC adayı) ve daha uzun bitişik rakam blokları
     private static readonly Regex ElevenDigits = new(@"(?<!\d)(\d{11})(?!\d)", RegexOptions.Compiled);
+    private static readonly Regex LongDigits = new(@"\d{11,}", RegexOptions.Compiled);
 
     public record ExtractedGroup(string? Tc, int FromPage, int ToPage, byte[] Pdf, string Preview);
 
@@ -67,17 +68,40 @@ public class PayrollPdfService
         return result;
     }
 
-    /// <summary>Metindeki en olası T.C. Kimlik No'yu döner (geçerli checksum önceliklidir).</summary>
+    /// <summary>
+    /// Metindeki en olası T.C. Kimlik No'yu döner. Öncelik sırası:
+    /// (1) Metinde tek başına duran ve checksum'ı geçerli 11 haneli sayı,
+    /// (2) 11+ haneli bitişik rakam bloklarının içinde kayan pencere ile bulunan geçerli TC
+    ///     (PDF metin çıkarımı bazen sayıları yan yana yapıştırır),
+    /// (3) hiçbiri yoksa metindeki tek başına duran ilk 11 haneli sayı.
+    /// </summary>
     public static string? DetectTc(string text)
     {
-        string? firstAny = null;
+        if (string.IsNullOrEmpty(text)) return null;
+
+        // (1) Tek başına duran, checksum'ı geçerli TC — en güvenilir durum.
+        string? firstStandalone = null;
         foreach (Match m in ElevenDigits.Matches(text))
         {
             var candidate = m.Groups[1].Value;
-            firstAny ??= candidate;
+            firstStandalone ??= candidate;
             if (IsValidTc(candidate)) return candidate;
         }
-        return firstAny; // geçerli yoksa ilk 11 haneli sayı
+
+        // (2) Bitişik uzun rakam bloklarını kayan pencere ile tara (ör. "22221010110396620590238000").
+        //     Blok içinde geçerli checksum veren ilk 11'li dizi TC olarak kabul edilir.
+        foreach (Match m in LongDigits.Matches(text))
+        {
+            var blob = m.Value;
+            for (int i = 0; i + 11 <= blob.Length; i++)
+            {
+                var window = blob.Substring(i, 11);
+                if (IsValidTc(window)) return window;
+            }
+        }
+
+        // (3) Geçerli checksum bulunamadıysa tek başına duran ilk 11 haneli sayı.
+        return firstStandalone;
     }
 
     /// <summary>Türkiye T.C. Kimlik No algoritmik doğrulaması.</summary>
