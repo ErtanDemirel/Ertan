@@ -85,8 +85,31 @@ export const mealApi = {
   list: () => api.get<MealMenu[]>('/api/meals').then((r) => r.data),
 };
 
+export interface AttendanceRecord {
+  id: number; personnelId: number; personnelName: string; sicilNo: string;
+  type: 'CheckIn' | 'CheckOut'; timestamp: string;
+  workLocationName?: string | null; distanceMeters: number; isWithinGeofence: boolean;
+}
 export const attendanceApi = {
   check: (qrContent: string, latitude: number, longitude: number, deviceInfo?: string) =>
     api.post<AttendanceResult>('/api/attendance/check', { qrContent, latitude, longitude, deviceInfo }).then((r) => r.data),
-  my: () => api.get('/api/attendance/my').then((r) => r.data),
+  my: (from?: string, to?: string) =>
+    api.get<AttendanceRecord[]>('/api/attendance/my', { params: { from, to } }).then((r) => r.data),
+};
+
+export interface DirectoryEntry {
+  name: string; title?: string | null; department?: string | null;
+  phone?: string | null; email?: string | null;
+}
+export const directoryApi = {
+  list: (search?: string) =>
+    api.get<DirectoryEntry[]>('/api/me/directory', { params: { search } }).then((r) => r.data),
+};
+
+export interface MyService {
+  mine: { routeName?: string | null; stop?: string | null; departure?: string | null; ret?: string | null; driver?: string | null; plate?: string | null } | null;
+  routes: { name: string; stops?: string | null; departure?: string | null; ret?: string | null }[];
+}
+export const serviceApi = {
+  mine: () => api.get<MyService>('/api/me/service').then((r) => r.data),
 };

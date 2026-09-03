@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { announcementApi } from '../api/services';
-import { colors } from '../theme';
+import { colors, shadow } from '../theme';
 import type { Announcement } from '../api/types';
 
 export default function AnnouncementsScreen() {
@@ -24,7 +24,6 @@ export default function AnnouncementsScreen() {
       style={styles.container}
       refreshControl={<RefreshControl refreshing={list.isFetching} onRefresh={() => list.refetch()} />}
     >
-      <Text style={styles.header}>Duyurular</Text>
       {(list.data ?? []).length === 0 ? (
         <Text style={styles.empty}>Duyuru bulunmuyor.</Text>
       ) : (
@@ -76,9 +75,8 @@ export default function AnnouncementsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg, padding: 16 },
-  header: { fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 14 },
   empty: { color: colors.muted, fontStyle: 'italic' },
-  card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border },
+  card: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 12, ...shadow },
   cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { fontWeight: '700', color: colors.text, fontSize: 15, flex: 1 },
   mandatory: { color: colors.danger, fontSize: 11, fontWeight: '700', borderColor: colors.danger, borderWidth: 1, borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2 },

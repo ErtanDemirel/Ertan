@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { mealApi } from '../api/services';
-import { colors } from '../theme';
+import { colors, shadow } from '../theme';
 
 export default function MealsScreen() {
   const meals = useQuery({ queryKey: ['meals'], queryFn: () => mealApi.list() });
@@ -12,7 +12,6 @@ export default function MealsScreen() {
       style={styles.container}
       refreshControl={<RefreshControl refreshing={meals.isFetching} onRefresh={() => meals.refetch()} />}
     >
-      <Text style={styles.header}>Yemek Listesi</Text>
       {(meals.data ?? []).length === 0 ? (
         <Text style={styles.empty}>Bu dönem için menü girilmemiş.</Text>
       ) : (
@@ -38,9 +37,8 @@ export default function MealsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg, padding: 16 },
-  header: { fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 14 },
   empty: { color: colors.muted, fontStyle: 'italic' },
-  card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border },
+  card: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 12, ...shadow },
   date: { fontWeight: '700', color: colors.primary, marginBottom: 8, textTransform: 'capitalize' },
   item: { color: colors.text, fontSize: 15, marginVertical: 2 },
   alt: { color: colors.muted, fontSize: 13, marginTop: 4, fontStyle: 'italic' },

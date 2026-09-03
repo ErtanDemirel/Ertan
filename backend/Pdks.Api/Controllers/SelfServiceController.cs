@@ -59,4 +59,36 @@ public class SelfServiceController : ControllerBase
 
         return Ok(new { mine, routes });
     }
+
+    /// <summary>
+    /// Şirket rehberi — aktif personelin ad, ünvan, departman ve iş telefonu.
+    /// Hassas veri (TCKN, bordro, adres vb.) DÖNMEZ. Herhangi bir giriş yapmış kullanıcı görebilir.
+    /// </summary>
+    [HttpGet("directory")]
+    public async Task<ActionResult<object>> Directory([FromQuery] string? search, CancellationToken ct)
+    {
+        var q = _db.Personnel.AsNoTracking().Where(p => p.IsActive);
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var s = search.Trim();
+            q = q.Where(p => p.FirstName.Contains(s) || p.LastName.Contains(s)
+                || (p.Title != null && p.Title.Contains(s))
+                || (p.Department != null && p.Department.Contains(s)));
+        }
+
+        var rows = await q
+            .OrderBy(p => p.FirstName).ThenBy(p => p.LastName)
+            .Take(1000)
+            .Select(p => new
+            {
+                name = p.FirstName + " " + p.LastName,
+                title = p.Title,
+                department = p.Dept != null ? p.Dept.Name : p.Department,
+                phone = p.PhoneNumber,
+                email = p.Email,
+            })
+            .ToListAsync(ct);
+
+        return Ok(rows);
+    }
 }
