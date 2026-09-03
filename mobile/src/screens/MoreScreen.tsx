@@ -39,6 +39,12 @@ export default function MoreScreen() {
       ],
     },
     {
+      header: 'Araçlar',
+      items: [
+        { icon: 'calculator-outline', title: 'Hesaplama', sub: 'Fazla mesai • kıdem/ihbar', go: 'Calc' },
+      ],
+    },
+    {
       header: 'Kişisel',
       items: [
         { icon: 'document-text-outline', title: 'Notlarım', sub: 'Kişisel notlar', go: 'Notes' },

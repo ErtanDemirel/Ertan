@@ -67,6 +67,7 @@ yönetim paneli ve Expo/React Native mobil uygulama.
 | **Raporlar (CSV)** | Amir/Admin için **Excel'de açılan CSV** çıktıları: personel listesi, izin talepleri (yarım gün dahil, tarih/durum filtreli), mesai giriş/çıkış, yıllık izin bakiyeleri. Bordro gibi hassas veriler raporlara **dahil edilmez**. |
 | **Çalışan Sesi** | Personel **öneri / şikayet / ramak kala (iş güvenliği) / dilek** gönderir (isteğe bağlı **anonim**); Amir/Admin görüntüler, durum (Yeni→İnceleniyor→Çözüldü) ve yanıt yazar. Web + mobil. |
 | **Şirket rehberi & Mesai geçmişim** | Web self-servis ve mobilde: çalışan dizini (ara, telefon/e-posta) ve kişinin kendi mesai giriş/çıkış geçmişi + aylık özet. |
+| **Hesaplama araçları** | Web + mobil, saf istemci: **fazla mesai** (%25/%50/%100 zam) ve **kıdem/ihbar tazminatı** (brüt tahmini). |
 | **Güvenli şema güncelleme** | `EnsureCreated` + idempotent `DbMaintenance` uyumlayıcı: mevcut veritabanı veri kaybı olmadan yeni kolon/tablo alır. Üretim için EF Core migration'a hazır (bkz. `database/migrations/`). |
 
 ### Eklediğim "olmazsa olmaz" güvenlik/işlevsellik
