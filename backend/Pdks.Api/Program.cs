@@ -92,6 +92,22 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key)),
             ClockSkew = TimeSpan.FromSeconds(30)
         };
+        // Video/medya uçlarında <video src> Authorization başlığı gönderemediğinden
+        // token'ı query string'den (?access_token=) de kabul et (yalnızca video yolu için).
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = ctx =>
+            {
+                if (string.IsNullOrEmpty(ctx.Token))
+                {
+                    var qToken = ctx.Request.Query["access_token"].ToString();
+                    var path = ctx.HttpContext.Request.Path;
+                    if (!string.IsNullOrEmpty(qToken) && path.HasValue && path.Value!.EndsWith("/video", StringComparison.OrdinalIgnoreCase))
+                        ctx.Token = qToken;
+                }
+                return Task.CompletedTask;
+            }
+        };
     });
 builder.Services.AddAuthorization();
 

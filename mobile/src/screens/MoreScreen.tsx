@@ -40,8 +40,9 @@ export default function MoreScreen() {
       ],
     },
     {
-      header: 'Araçlar',
+      header: 'Gelişim',
       items: [
+        { icon: 'school-outline', title: 'Eğitimlerim', sub: 'Video eğitimler', go: 'Training' },
         { icon: 'calculator-outline', title: 'Hesaplama', sub: 'Fazla mesai • kıdem/ihbar', go: 'Calc' },
       ],
     },

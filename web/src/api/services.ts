@@ -306,3 +306,16 @@ export const contactApi = {
   decide: (id: number, approve: boolean, comment?: string) =>
     api.post<import('./types').ContactUpdate>(`/api/contact-requests/${id}/decide`, { approve, comment }).then((r) => r.data),
 };
+
+// ---------------- Eğitim (video) ----------------
+import { API_BASE, tokenStore } from './client';
+export const trainingApi = {
+  list: () => api.get<import('./types').Training[]>('/api/trainings').then((r) => r.data),
+  videoUrl: (id: number) => `${API_BASE}/api/trainings/${id}/video?access_token=${encodeURIComponent(tokenStore.access ?? '')}`,
+  progress: (id: number, position: number, duration?: number) =>
+    api.post<import('./types').Training>(`/api/trainings/${id}/progress`, { position: Math.floor(position), duration: duration ? Math.floor(duration) : undefined }).then((r) => r.data),
+  admin: () => api.get<import('./types').TrainingAdmin[]>('/api/trainings/admin').then((r) => r.data),
+  report: (id: number) => api.get<{ training: any; rows: import('./types').TrainingProgressRow[]; assigned: number; completed: number }>(`/api/trainings/${id}/report`).then((r) => r.data),
+  create: (fd: FormData) => api.post<import('./types').TrainingAdmin>('/api/trainings', fd).then((r) => r.data),
+  remove: (id: number) => api.delete(`/api/trainings/${id}`).then((r) => r.data),
+};

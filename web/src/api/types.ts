@@ -391,3 +391,40 @@ export interface ContactInfo {
   emergencyContactPhone?: string | null;
   pending?: ContactUpdate | null;
 }
+
+export interface Training {
+  id: number;
+  title: string;
+  description?: string | null;
+  category: string;
+  durationSeconds: number;
+  isMandatory: boolean;
+  isActive: boolean;
+  watchedSeconds: number;
+  completed: boolean;
+  completedAt?: string | null;
+  progressPercent: number;
+}
+export interface TrainingAdmin {
+  id: number;
+  title: string;
+  description?: string | null;
+  category: string;
+  durationSeconds: number;
+  isMandatory: boolean;
+  isActive: boolean;
+  videoFileName: string;
+  createdAt: string;
+  assignedCount: number;
+  completedCount: number;
+  completionRate: number;
+}
+export interface TrainingProgressRow {
+  personnelId: number;
+  personnelName: string;
+  sicilNo?: string | null;
+  watchedSeconds: number;
+  progressPercent: number;
+  completed: boolean;
+  completedAt?: string | null;
+}

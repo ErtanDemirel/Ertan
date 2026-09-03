@@ -2,6 +2,7 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import type { AuthResponse } from './types';
 
 const baseURL = import.meta.env.VITE_API_URL || '';
+export const API_BASE = baseURL;
 
 export const api = axios.create({ baseURL });
 

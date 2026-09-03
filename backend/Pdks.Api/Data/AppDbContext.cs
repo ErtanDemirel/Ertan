@@ -37,6 +37,8 @@ public class AppDbContext : DbContext
     public DbSet<ExpenseRequest> ExpenseRequests => Set<ExpenseRequest>();
     public DbSet<FeedbackItem> FeedbackItems => Set<FeedbackItem>();
     public DbSet<ContactUpdateRequest> ContactUpdateRequests => Set<ContactUpdateRequest>();
+    public DbSet<Training> Trainings => Set<Training>();
+    public DbSet<TrainingProgress> TrainingProgresses => Set<TrainingProgress>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -294,6 +296,18 @@ public class AppDbContext : DbContext
             e.HasIndex(x => new { x.PersonnelId, x.Status });
             e.HasOne(x => x.Personnel).WithMany().HasForeignKey(x => x.PersonnelId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(x => x.HandledBy).WithMany().HasForeignKey(x => x.HandledByUserId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ---- Training / TrainingProgress ----
+        b.Entity<Training>(e =>
+        {
+            e.HasOne(x => x.CreatedBy).WithMany().HasForeignKey(x => x.CreatedByUserId).OnDelete(DeleteBehavior.SetNull);
+        });
+        b.Entity<TrainingProgress>(e =>
+        {
+            e.HasIndex(x => new { x.TrainingId, x.PersonnelId }).IsUnique();
+            e.HasOne(x => x.Training).WithMany(t => t.Progresses).HasForeignKey(x => x.TrainingId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Personnel).WithMany().HasForeignKey(x => x.PersonnelId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

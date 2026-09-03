@@ -1,4 +1,5 @@
-import { api } from './client';
+import { api, getAccessToken } from './client';
+import { API_URL } from '../config';
 import type {
   Announcement, AttendanceResult, AuthResponse, LeaveBalance, LeaveRequest,
   LeaveType, MealMenu, Payslip,
@@ -118,6 +119,18 @@ export const voiceApi = {
   my: () => api.get<Feedback[]>('/api/voice/my').then((r) => r.data),
   create: (b: { kind: FeedbackKind; title?: string; body: string; location?: string; isAnonymous?: boolean }) =>
     api.post<Feedback>('/api/voice', b).then((r) => r.data),
+};
+
+export interface Training {
+  id: number; title: string; description?: string | null; category: string;
+  durationSeconds: number; isMandatory: boolean; isActive: boolean;
+  watchedSeconds: number; completed: boolean; completedAt?: string | null; progressPercent: number;
+}
+export const trainingApi = {
+  list: () => api.get<Training[]>('/api/trainings').then((r) => r.data),
+  videoUrl: (id: number) => `${API_URL}/api/trainings/${id}/video?access_token=${encodeURIComponent(getAccessToken() ?? '')}`,
+  progress: (id: number, position: number, duration?: number) =>
+    api.post<Training>(`/api/trainings/${id}/progress`, { position: Math.floor(position), duration: duration ? Math.floor(duration) : undefined }).then((r) => r.data),
 };
 
 export interface Holiday { id: number; date: string; name: string; isHalfDay: boolean; }

@@ -34,6 +34,66 @@ public static class DbMaintenance
         await EnsurePushTokensTableAsync(db, logger, ct);
         await EnsureFeedbackTableAsync(db, logger, ct);
         await EnsureContactRequestsTableAsync(db, logger, ct);
+        await EnsureTrainingTablesAsync(db, logger, ct);
+    }
+
+    private static async Task EnsureTrainingTablesAsync(AppDbContext db, ILogger logger, CancellationToken ct)
+    {
+        try
+        {
+            if (!await TableExistsAsync(db, "Trainings", ct))
+            {
+                var sql = db.Database.IsSqlite()
+                    ? @"CREATE TABLE IF NOT EXISTS Trainings (
+                            Id INTEGER NOT NULL CONSTRAINT PK_Trainings PRIMARY KEY AUTOINCREMENT,
+                            Title TEXT NOT NULL, Description TEXT NULL,
+                            Category TEXT NOT NULL DEFAULT 'İK',
+                            VideoPath TEXT NOT NULL, VideoContentType TEXT NOT NULL DEFAULT 'video/mp4',
+                            VideoFileName TEXT NOT NULL, DurationSeconds INTEGER NOT NULL DEFAULT 0,
+                            IsMandatory INTEGER NOT NULL DEFAULT 1, IsActive INTEGER NOT NULL DEFAULT 1,
+                            CreatedByUserId INTEGER NULL, CreatedAt TEXT NOT NULL,
+                            CONSTRAINT FK_Training_User FOREIGN KEY (CreatedByUserId) REFERENCES Users(Id)
+                        );"
+                    : @"CREATE TABLE Trainings (
+                            Id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Trainings PRIMARY KEY,
+                            Title NVARCHAR(150) NOT NULL, Description NVARCHAR(2000) NULL,
+                            Category NVARCHAR(40) NOT NULL DEFAULT 'İK',
+                            VideoPath NVARCHAR(400) NOT NULL, VideoContentType NVARCHAR(120) NOT NULL DEFAULT 'video/mp4',
+                            VideoFileName NVARCHAR(200) NOT NULL, DurationSeconds INT NOT NULL DEFAULT 0,
+                            IsMandatory BIT NOT NULL DEFAULT 1, IsActive BIT NOT NULL DEFAULT 1,
+                            CreatedByUserId INT NULL, CreatedAt DATETIME2 NOT NULL,
+                            CONSTRAINT FK_Training_User FOREIGN KEY (CreatedByUserId) REFERENCES Users(Id)
+                        );";
+                await db.Database.ExecuteSqlRawAsync(sql, ct);
+            }
+            if (!await TableExistsAsync(db, "TrainingProgresses", ct))
+            {
+                var sql = db.Database.IsSqlite()
+                    ? @"CREATE TABLE IF NOT EXISTS TrainingProgresses (
+                            Id INTEGER NOT NULL CONSTRAINT PK_TrainingProgresses PRIMARY KEY AUTOINCREMENT,
+                            TrainingId INTEGER NOT NULL, PersonnelId INTEGER NOT NULL,
+                            WatchedSeconds INTEGER NOT NULL DEFAULT 0, Completed INTEGER NOT NULL DEFAULT 0,
+                            CompletedAt TEXT NULL, StartedAt TEXT NULL, UpdatedAt TEXT NOT NULL,
+                            CONSTRAINT FK_TP_Training FOREIGN KEY (TrainingId) REFERENCES Trainings(Id) ON DELETE CASCADE,
+                            CONSTRAINT FK_TP_Personnel FOREIGN KEY (PersonnelId) REFERENCES Personnel(Id) ON DELETE CASCADE
+                        );"
+                    : @"CREATE TABLE TrainingProgresses (
+                            Id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_TrainingProgresses PRIMARY KEY,
+                            TrainingId INT NOT NULL, PersonnelId INT NOT NULL,
+                            WatchedSeconds INT NOT NULL DEFAULT 0, Completed BIT NOT NULL DEFAULT 0,
+                            CompletedAt DATETIME2 NULL, StartedAt DATETIME2 NULL, UpdatedAt DATETIME2 NOT NULL,
+                            CONSTRAINT FK_TP_Training FOREIGN KEY (TrainingId) REFERENCES Trainings(Id) ON DELETE CASCADE,
+                            CONSTRAINT FK_TP_Personnel FOREIGN KEY (PersonnelId) REFERENCES Personnel(Id) ON DELETE CASCADE
+                        );";
+                await db.Database.ExecuteSqlRawAsync(sql, ct);
+                await db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IX_TP_TrainingPersonnel ON TrainingProgresses(TrainingId, PersonnelId);", ct);
+            }
+            logger.LogInformation("Şema uyumlandı: Eğitim tabloları hazır.");
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Şema uyumlama atlandı: Eğitim tabloları");
+        }
     }
 
     private static async Task EnsureContactRequestsTableAsync(AppDbContext db, ILogger logger, CancellationToken ct)

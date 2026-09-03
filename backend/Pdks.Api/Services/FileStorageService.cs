@@ -9,6 +9,8 @@ public class StorageOptions
     public string Root { get; set; } = "App_Data/uploads";
     /// <summary>İzin verilen en büyük dosya boyutu (MB).</summary>
     public int MaxFileSizeMb { get; set; } = 10;
+    /// <summary>Eğitim videoları için en büyük boyut (MB).</summary>
+    public int MaxVideoSizeMb { get; set; } = 500;
 }
 
 public record StoredFileInfo(string FileName, string StoredPath, string ContentType, long SizeBytes);
@@ -24,9 +26,14 @@ public class FileStorageService
     {
         ".pdf", ".jpg", ".jpeg", ".png", ".webp", ".doc", ".docx"
     };
+    private static readonly HashSet<string> VideoExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".mp4", ".webm", ".mov", ".m4v", ".ogg"
+    };
 
     private readonly string _root;
     private readonly long _maxBytes;
+    private readonly long _maxVideoBytes;
     private readonly FileExtensionContentTypeProvider _mime = new();
 
     public FileStorageService(IHostEnvironment env, Microsoft.Extensions.Options.IOptions<StorageOptions> opt)
@@ -34,7 +41,43 @@ public class FileStorageService
         var o = opt.Value;
         _root = Path.IsPathRooted(o.Root) ? o.Root : Path.Combine(env.ContentRootPath, o.Root);
         _maxBytes = (long)o.MaxFileSizeMb * 1024 * 1024;
+        _maxVideoBytes = (long)o.MaxVideoSizeMb * 1024 * 1024;
         Directory.CreateDirectory(_root);
+    }
+
+    /// <summary>Eğitim videosunu doğrular ve saklar (video uzantıları + büyük boyut sınırı).</summary>
+    public async Task<StoredFileInfo> SaveVideoAsync(IFormFile file, string category, CancellationToken ct = default)
+    {
+        if (file is null || file.Length == 0)
+            throw new InvalidOperationException("Video boş.");
+        if (file.Length > _maxVideoBytes)
+            throw new InvalidOperationException($"Video çok büyük (en fazla {_maxVideoBytes / (1024 * 1024)} MB).");
+        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+        if (!VideoExtensions.Contains(ext))
+            throw new InvalidOperationException("İzin verilmeyen video türü. (mp4, webm, mov, m4v)");
+
+        var safeCategory = Path.GetFileName(category);
+        var dir = Path.Combine(_root, safeCategory);
+        Directory.CreateDirectory(dir);
+        var storedName = $"{Guid.NewGuid():N}{ext}";
+        var fullPath = Path.Combine(dir, storedName);
+        await using (var stream = new FileStream(fullPath, FileMode.CreateNew))
+            await file.CopyToAsync(stream, ct);
+
+        if (!_mime.TryGetContentType(file.FileName, out var contentType))
+            contentType = "video/mp4";
+        var rel = Path.Combine(safeCategory, storedName).Replace('\\', '/');
+        return new StoredFileInfo(Path.GetFileName(file.FileName), rel, contentType, file.Length);
+    }
+
+    /// <summary>Saklanan dosyanın tam disk yolunu (range/stream için) döner; kök dışına çıkamaz.</summary>
+    public string ResolvePath(string storedPath)
+    {
+        var full = Path.GetFullPath(Path.Combine(_root, storedPath));
+        var rootFull = Path.GetFullPath(_root);
+        if (!full.StartsWith(rootFull, StringComparison.Ordinal) || !File.Exists(full))
+            throw new FileNotFoundException("Dosya bulunamadı.");
+        return full;
     }
 
     public bool IsAllowed(string fileName, out string extension)

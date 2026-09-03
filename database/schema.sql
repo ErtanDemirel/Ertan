@@ -380,6 +380,37 @@ CREATE TABLE ContactUpdateRequests (
 );
 CREATE INDEX IX_CUR_PersonnelStatus ON ContactUpdateRequests(PersonnelId, Status);
 
+/* ---------------- Eğitim videoları + izlenme ---------------- */
+CREATE TABLE Trainings (
+    Id               INT IDENTITY PRIMARY KEY,
+    Title            NVARCHAR(150) NOT NULL,
+    Description      NVARCHAR(2000) NULL,
+    Category         NVARCHAR(40) NOT NULL DEFAULT 'İK',   -- İK / İSG
+    VideoPath        NVARCHAR(400) NOT NULL,
+    VideoContentType NVARCHAR(120) NOT NULL DEFAULT 'video/mp4',
+    VideoFileName    NVARCHAR(200) NOT NULL,
+    DurationSeconds  INT NOT NULL DEFAULT 0,
+    IsMandatory      BIT NOT NULL DEFAULT 1,
+    IsActive         BIT NOT NULL DEFAULT 1,
+    CreatedByUserId  INT NULL,
+    CreatedAt        DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT FK_Training_User FOREIGN KEY (CreatedByUserId) REFERENCES Users(Id)
+);
+
+CREATE TABLE TrainingProgresses (
+    Id             INT IDENTITY PRIMARY KEY,
+    TrainingId     INT NOT NULL,
+    PersonnelId    INT NOT NULL,
+    WatchedSeconds INT NOT NULL DEFAULT 0,   -- izlenen en ileri konum (sarma engeli + devam)
+    Completed      BIT NOT NULL DEFAULT 0,
+    CompletedAt    DATETIME2 NULL,
+    StartedAt      DATETIME2 NULL,
+    UpdatedAt      DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT FK_TP_Training FOREIGN KEY (TrainingId) REFERENCES Trainings(Id) ON DELETE CASCADE,
+    CONSTRAINT FK_TP_Personnel FOREIGN KEY (PersonnelId) REFERENCES Personnel(Id) ON DELETE CASCADE
+);
+CREATE UNIQUE INDEX IX_TP_TrainingPersonnel ON TrainingProgresses(TrainingId, PersonnelId);
+
 /* ---------------- Departman & Onay Zinciri ---------------- */
 CREATE TABLE Departments (
     Id                 INT IDENTITY PRIMARY KEY,

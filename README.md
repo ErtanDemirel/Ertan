@@ -70,6 +70,7 @@ yönetim paneli ve Expo/React Native mobil uygulama.
 | **Hesaplama araçları** | Web + mobil, saf istemci: **fazla mesai** (%25/%50/%100 zam) ve **kıdem/ihbar tazminatı** (brüt tahmini). |
 | **İletişim & acil durum güncelleme** | Personel telefon/e-posta/adres + **acil durum kişisi**ni günceller; **İK/amir onayından** sonra karta işlenir. Web + mobil. |
 | **Devamlılık / Çalışma takvimim** | Aylık **ısı haritası** (geldi/izinli/gelmedi/tatil/hafta sonu) + **devamlılık %** (web'de halka grafiği). Mesai + tatil + onaylı izin verisinden hesaplanır. Web + mobil. |
+| **Eğitim (video)** | İK/İSG video yükler; personel **ileri saramadan** izler, **kaldığı yerden devam eder** (ilerleme sunucuda saklanır, sıfırlanmaz). Bitince **"Aldığım eğitimler"**e geçer. Yetkililer **izlenme oranlarını** panelden takip eder. Video, range destekli akışla (token query'de) servis edilir. Web + mobil. |
 | **Güvenli şema güncelleme** | `EnsureCreated` + idempotent `DbMaintenance` uyumlayıcı: mevcut veritabanı veri kaybı olmadan yeni kolon/tablo alır. Üretim için EF Core migration'a hazır (bkz. `database/migrations/`). |
 
 ### Eklediğim "olmazsa olmaz" güvenlik/işlevsellik
