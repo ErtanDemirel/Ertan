@@ -2,7 +2,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, CalendarClock, CalendarDays, Megaphone,
   UtensilsCrossed, Bus, MapPin, LogOut, ClipboardCheck, ShieldCheck,
-  Wallet, UserPlus, BarChart3, CalendarRange, Layers, CalendarX, KeyRound, GitBranch, FileSpreadsheet, MessagesSquare, UserCog, GraduationCap,
+  Wallet, UserPlus, BarChart3, CalendarRange, Layers, CalendarX, KeyRound, GitBranch, FileSpreadsheet, MessagesSquare, UserCog, GraduationCap, Briefcase,
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import NotificationBell from './NotificationBell';
@@ -27,6 +27,7 @@ const nav: NavItem[] = [
   { to: '/candidates', label: 'Aday Yönetimi', icon: UserPlus },
   { to: '/voice', label: 'Çalışan Sesi', icon: MessagesSquare },
   { to: '/trainings', label: 'Eğitimler', icon: GraduationCap },
+  { to: '/postings', label: 'İç İlanlar', icon: Briefcase },
   { to: '/contact-requests', label: 'İletişim Talepleri', icon: UserCog },
   { to: '/announcements', label: 'Duyurular', icon: Megaphone },
   { to: '/meals', label: 'Yemek Listesi', icon: UtensilsCrossed },

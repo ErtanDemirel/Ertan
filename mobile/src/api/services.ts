@@ -133,6 +133,22 @@ export const trainingApi = {
     api.post<Training>(`/api/trainings/${id}/progress`, { position: Math.floor(position), duration: duration ? Math.floor(duration) : undefined }).then((r) => r.data),
 };
 
+export type AppStatus = 'New' | 'Reviewing' | 'Interview' | 'Offered' | 'Hired' | 'Rejected';
+export interface InternalPosting {
+  id: number; title: string; description?: string | null; department?: string | null;
+  location?: string | null; positionCount?: number | null; deadline?: string | null;
+  isActive: boolean; createdAt: string; applicantCount: number; alreadyApplied: boolean; myStatus?: string | null;
+}
+export interface InternalApplication {
+  id: number; postingId: number; postingTitle: string; personnelName: string;
+  note?: string | null; status: AppStatus; handlerComment?: string | null; createdAt: string;
+}
+export const postingApi = {
+  list: () => api.get<InternalPosting[]>('/api/internal-postings').then((r) => r.data),
+  apply: (id: number, note?: string) => api.post<InternalApplication>(`/api/internal-postings/${id}/apply`, { note }).then((r) => r.data),
+  myApplications: () => api.get<InternalApplication[]>('/api/internal-postings/my-applications').then((r) => r.data),
+};
+
 export interface Holiday { id: number; date: string; name: string; isHalfDay: boolean; }
 export const holidayApi = {
   list: (year?: number) => api.get<Holiday[]>('/api/holidays', { params: { year } }).then((r) => r.data),

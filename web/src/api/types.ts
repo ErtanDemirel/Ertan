@@ -428,3 +428,33 @@ export interface TrainingProgressRow {
   completed: boolean;
   completedAt?: string | null;
 }
+
+export type AppStatus = 'New' | 'Reviewing' | 'Interview' | 'Offered' | 'Hired' | 'Rejected';
+export interface InternalPosting {
+  id: number;
+  title: string;
+  description?: string | null;
+  department?: string | null;
+  location?: string | null;
+  positionCount?: number | null;
+  deadline?: string | null;
+  isActive: boolean;
+  createdAt: string;
+  applicantCount: number;
+  alreadyApplied: boolean;
+  myStatus?: string | null;
+}
+export interface InternalApplication {
+  id: number;
+  postingId: number;
+  postingTitle: string;
+  personnelId: number;
+  personnelName: string;
+  sicilNo?: string | null;
+  department?: string | null;
+  note?: string | null;
+  status: AppStatus;
+  handlerComment?: string | null;
+  createdAt: string;
+  handledAt?: string | null;
+}

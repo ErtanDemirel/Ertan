@@ -319,3 +319,14 @@ export const trainingApi = {
   create: (fd: FormData) => api.post<import('./types').TrainingAdmin>('/api/trainings', fd).then((r) => r.data),
   remove: (id: number) => api.delete(`/api/trainings/${id}`).then((r) => r.data),
 };
+
+// ---------------- İç ilanlar ----------------
+export const postingApi = {
+  list: (all = false) => api.get<import('./types').InternalPosting[]>('/api/internal-postings', { params: { all } }).then((r) => r.data),
+  create: (b: unknown) => api.post<import('./types').InternalPosting>('/api/internal-postings', b).then((r) => r.data),
+  update: (id: number, b: unknown) => api.put(`/api/internal-postings/${id}`, b).then((r) => r.data),
+  apply: (id: number, note?: string) => api.post<import('./types').InternalApplication>(`/api/internal-postings/${id}/apply`, { note }).then((r) => r.data),
+  myApplications: () => api.get<import('./types').InternalApplication[]>('/api/internal-postings/my-applications').then((r) => r.data),
+  applications: (id: number) => api.get<import('./types').InternalApplication[]>(`/api/internal-postings/${id}/applications`).then((r) => r.data),
+  decide: (id: number, status: string, comment?: string) => api.post<import('./types').InternalApplication>(`/api/internal-applications/${id}/decide`, { status, comment }).then((r) => r.data),
+};

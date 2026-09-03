@@ -411,6 +411,36 @@ CREATE TABLE TrainingProgresses (
 );
 CREATE UNIQUE INDEX IX_TP_TrainingPersonnel ON TrainingProgresses(TrainingId, PersonnelId);
 
+/* ---------------- İç ilanlar + başvurular ---------------- */
+CREATE TABLE InternalPostings (
+    Id              INT IDENTITY PRIMARY KEY,
+    Title           NVARCHAR(150) NOT NULL,
+    Description     NVARCHAR(3000) NULL,
+    Department      NVARCHAR(80) NULL,
+    Location        NVARCHAR(120) NULL,
+    PositionCount   INT NULL,
+    Deadline        DATE NULL,
+    IsActive        BIT NOT NULL DEFAULT 1,
+    CreatedByUserId INT NULL,
+    CreatedAt       DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT FK_IP_User FOREIGN KEY (CreatedByUserId) REFERENCES Users(Id)
+);
+
+CREATE TABLE InternalApplications (
+    Id              INT IDENTITY PRIMARY KEY,
+    PostingId       INT NOT NULL,
+    PersonnelId     INT NOT NULL,
+    Note            NVARCHAR(1500) NULL,
+    Status          INT NOT NULL DEFAULT 0,   -- 0=Yeni,1=İnceleniyor,2=Görüşme,3=Teklif,4=Alındı,5=Reddedildi
+    HandlerComment  NVARCHAR(500) NULL,
+    HandledByUserId INT NULL,
+    CreatedAt       DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    HandledAt       DATETIME2 NULL,
+    CONSTRAINT FK_IA_Posting FOREIGN KEY (PostingId) REFERENCES InternalPostings(Id) ON DELETE CASCADE,
+    CONSTRAINT FK_IA_Personnel FOREIGN KEY (PersonnelId) REFERENCES Personnel(Id) ON DELETE CASCADE
+);
+CREATE UNIQUE INDEX IX_IA_PostingPersonnel ON InternalApplications(PostingId, PersonnelId);
+
 /* ---------------- Departman & Onay Zinciri ---------------- */
 CREATE TABLE Departments (
     Id                 INT IDENTITY PRIMARY KEY,

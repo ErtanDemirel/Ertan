@@ -35,6 +35,60 @@ public static class DbMaintenance
         await EnsureFeedbackTableAsync(db, logger, ct);
         await EnsureContactRequestsTableAsync(db, logger, ct);
         await EnsureTrainingTablesAsync(db, logger, ct);
+        await EnsureInternalPostingTablesAsync(db, logger, ct);
+    }
+
+    private static async Task EnsureInternalPostingTablesAsync(AppDbContext db, ILogger logger, CancellationToken ct)
+    {
+        try
+        {
+            if (!await TableExistsAsync(db, "InternalPostings", ct))
+            {
+                var sql = db.Database.IsSqlite()
+                    ? @"CREATE TABLE IF NOT EXISTS InternalPostings (
+                            Id INTEGER NOT NULL CONSTRAINT PK_InternalPostings PRIMARY KEY AUTOINCREMENT,
+                            Title TEXT NOT NULL, Description TEXT NULL, Department TEXT NULL, Location TEXT NULL,
+                            PositionCount INTEGER NULL, Deadline TEXT NULL, IsActive INTEGER NOT NULL DEFAULT 1,
+                            CreatedByUserId INTEGER NULL, CreatedAt TEXT NOT NULL,
+                            CONSTRAINT FK_IP_User FOREIGN KEY (CreatedByUserId) REFERENCES Users(Id)
+                        );"
+                    : @"CREATE TABLE InternalPostings (
+                            Id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_InternalPostings PRIMARY KEY,
+                            Title NVARCHAR(150) NOT NULL, Description NVARCHAR(3000) NULL, Department NVARCHAR(80) NULL,
+                            Location NVARCHAR(120) NULL, PositionCount INT NULL, Deadline DATE NULL,
+                            IsActive BIT NOT NULL DEFAULT 1, CreatedByUserId INT NULL, CreatedAt DATETIME2 NOT NULL,
+                            CONSTRAINT FK_IP_User FOREIGN KEY (CreatedByUserId) REFERENCES Users(Id)
+                        );";
+                await db.Database.ExecuteSqlRawAsync(sql, ct);
+            }
+            if (!await TableExistsAsync(db, "InternalApplications", ct))
+            {
+                var sql = db.Database.IsSqlite()
+                    ? @"CREATE TABLE IF NOT EXISTS InternalApplications (
+                            Id INTEGER NOT NULL CONSTRAINT PK_InternalApplications PRIMARY KEY AUTOINCREMENT,
+                            PostingId INTEGER NOT NULL, PersonnelId INTEGER NOT NULL, Note TEXT NULL,
+                            Status INTEGER NOT NULL DEFAULT 0, HandlerComment TEXT NULL, HandledByUserId INTEGER NULL,
+                            CreatedAt TEXT NOT NULL, HandledAt TEXT NULL,
+                            CONSTRAINT FK_IA_Posting FOREIGN KEY (PostingId) REFERENCES InternalPostings(Id) ON DELETE CASCADE,
+                            CONSTRAINT FK_IA_Personnel FOREIGN KEY (PersonnelId) REFERENCES Personnel(Id) ON DELETE CASCADE
+                        );"
+                    : @"CREATE TABLE InternalApplications (
+                            Id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_InternalApplications PRIMARY KEY,
+                            PostingId INT NOT NULL, PersonnelId INT NOT NULL, Note NVARCHAR(1500) NULL,
+                            Status INT NOT NULL DEFAULT 0, HandlerComment NVARCHAR(500) NULL, HandledByUserId INT NULL,
+                            CreatedAt DATETIME2 NOT NULL, HandledAt DATETIME2 NULL,
+                            CONSTRAINT FK_IA_Posting FOREIGN KEY (PostingId) REFERENCES InternalPostings(Id) ON DELETE CASCADE,
+                            CONSTRAINT FK_IA_Personnel FOREIGN KEY (PersonnelId) REFERENCES Personnel(Id) ON DELETE CASCADE
+                        );";
+                await db.Database.ExecuteSqlRawAsync(sql, ct);
+                await db.Database.ExecuteSqlRawAsync("CREATE UNIQUE INDEX IX_IA_PostingPersonnel ON InternalApplications(PostingId, PersonnelId);", ct);
+            }
+            logger.LogInformation("Şema uyumlandı: İç ilan tabloları hazır.");
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Şema uyumlama atlandı: İç ilan tabloları");
+        }
     }
 
     private static async Task EnsureTrainingTablesAsync(AppDbContext db, ILogger logger, CancellationToken ct)

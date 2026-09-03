@@ -43,6 +43,7 @@ export default function MoreScreen() {
       header: 'Gelişim',
       items: [
         { icon: 'school-outline', title: 'Eğitimlerim', sub: 'Video eğitimler', go: 'Training' },
+        { icon: 'briefcase-outline', title: 'İç İlanlar', sub: 'Başvur & takip et', go: 'Postings' },
         { icon: 'calculator-outline', title: 'Hesaplama', sub: 'Fazla mesai • kıdem/ihbar', go: 'Calc' },
       ],
     },
