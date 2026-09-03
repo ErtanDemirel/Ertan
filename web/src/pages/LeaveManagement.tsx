@@ -160,7 +160,7 @@ function AllTab() {
                   <td className="td font-medium">{r.personnelName}</td>
                   <td className="td">{r.leaveTypeName}</td>
                   <td className="td">{r.startDate} → {r.endDate}</td>
-                  <td className="td">{r.totalDays}</td>
+                  <td className="td">{r.totalDays}{r.halfDay === 'Morning' ? ' (½ ÖÖ)' : r.halfDay === 'Afternoon' ? ' (½ ÖS)' : ''}</td>
                   <td className="td"><StatusBadge status={r.status} /></td>
                   <td className="td">{r.approverName || '-'}</td>
                   <td className="td text-right">

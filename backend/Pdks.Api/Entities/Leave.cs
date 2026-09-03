@@ -57,8 +57,11 @@ public class LeaveRequest
     public DateOnly StartDate { get; set; }
     public DateOnly EndDate { get; set; }
 
-    /// <summary>Toplam iş günü / gün sayısı (talep sahibi girer, sunucu doğrular).</summary>
+    /// <summary>Toplam iş günü / gün sayısı (talep sahibi girer, sunucu doğrular). Yarım günde 0.5.</summary>
     public decimal TotalDays { get; set; }
+
+    /// <summary>Yarım gün izin dönemi (Yok=tam gün, ÖÖ/ÖS=0.5 gün). Sadece tek günlük izinlerde geçerli.</summary>
+    public HalfDayPeriod HalfDay { get; set; } = HalfDayPeriod.None;
 
     /// <summary>Talep başlığı.</summary>
     [MaxLength(150)]

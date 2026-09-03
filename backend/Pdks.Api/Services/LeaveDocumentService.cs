@@ -8,7 +8,7 @@ namespace Pdks.Api.Services;
 /// İzin talebinden, yer tutuculu bir Word şablonunu doldurarak izin belgesi (.docx) üretir.
 /// Şablon: ContentRoot/Templates/izin_belgesi_template.docx
 /// Yer tutucular: {{AdSoyad}}, {{SicilNo}}, {{Departman}}, {{Unvan}}, {{IzinTuru}},
-/// {{BaslangicTarihi}}, {{BitisTarihi}}, {{GunSayisi}}, {{TalepBasligi}}, {{Aciklama}},
+/// {{BaslangicTarihi}}, {{BitisTarihi}}, {{GunSayisi}}, {{YarimGun}}, {{TalepBasligi}}, {{Aciklama}},
 /// {{TalepTarihi}}, {{AmirAdi}}, {{BelgeTarihi}}
 /// Kendi belgenizi aynı yer tutucularla bu dosyanın yerine koyabilirsiniz.
 /// </summary>
@@ -40,7 +40,18 @@ public class LeaveDocumentService
             ["IzinTuru"] = type.Name,
             ["BaslangicTarihi"] = req.StartDate.ToString("dd.MM.yyyy"),
             ["BitisTarihi"] = req.EndDate.ToString("dd.MM.yyyy"),
-            ["GunSayisi"] = req.TotalDays.ToString("0.##"),
+            ["GunSayisi"] = req.HalfDay switch
+            {
+                HalfDayPeriod.Morning => "0,5 (Yarım gün - Öğleden önce)",
+                HalfDayPeriod.Afternoon => "0,5 (Yarım gün - Öğleden sonra)",
+                _ => req.TotalDays.ToString("0.##")
+            },
+            ["YarimGun"] = req.HalfDay switch
+            {
+                HalfDayPeriod.Morning => "Öğleden önce",
+                HalfDayPeriod.Afternoon => "Öğleden sonra",
+                _ => "-"
+            },
             ["TalepBasligi"] = req.Title ?? "-",
             ["Aciklama"] = req.Reason ?? "-",
             ["TalepTarihi"] = req.RequestedAt.ToString("dd.MM.yyyy"),

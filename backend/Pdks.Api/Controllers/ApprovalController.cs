@@ -45,7 +45,12 @@ public class ApprovalController : ControllerBase
             {
                 case RequestKind.Leave:
                     var lr = await _db.LeaveRequests.Include(x => x.LeaveType).AsNoTracking().FirstOrDefaultAsync(x => x.Id == chain.RequestId, ct);
-                    if (lr is not null) { summary = $"{lr.StartDate:dd.MM.yyyy} → {lr.EndDate:dd.MM.yyyy} ({lr.TotalDays} gün)"; title = lr.Title ?? lr.LeaveType?.Name ?? "İzin"; }
+                    if (lr is not null)
+                    {
+                        var half = lr.HalfDay switch { HalfDayPeriod.Morning => " · yarım gün (ÖÖ)", HalfDayPeriod.Afternoon => " · yarım gün (ÖS)", _ => "" };
+                        summary = $"{lr.StartDate:dd.MM.yyyy} → {lr.EndDate:dd.MM.yyyy} ({lr.TotalDays} gün{half})";
+                        title = lr.Title ?? lr.LeaveType?.Name ?? "İzin";
+                    }
                     break;
                 case RequestKind.Advance:
                     var ar = await _db.AdvanceRequests.AsNoTracking().FirstOrDefaultAsync(x => x.Id == chain.RequestId, ct);

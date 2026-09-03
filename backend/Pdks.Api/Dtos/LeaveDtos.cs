@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Pdks.Api.Entities;
 
 namespace Pdks.Api.Dtos;
 
@@ -29,6 +30,8 @@ public record LeaveRequestDto(
     DateOnly StartDate,
     DateOnly EndDate,
     decimal TotalDays,
+    // Yarım gün dönemi: "None" (tam gün), "Morning" (ÖÖ) veya "Afternoon" (ÖS).
+    string HalfDay,
     string? Title,
     string? Reason,
     string Status,
@@ -46,7 +49,9 @@ public record CreateLeaveRequest(
     string? Title,
     string? Reason,
     // Talep sahibinin girdiği gün sayısı (boşsa hafta sonları hariç otomatik hesaplanır).
-    decimal? Days);
+    decimal? Days,
+    // Yarım gün izin dönemi: null/None=tam gün, Morning=ÖÖ, Afternoon=ÖS. Seçilirse tek günlük olmalı, 0.5 gün sayılır.
+    HalfDayPeriod? HalfDay = null);
 
 public record DecideLeaveRequest(
     [property: Required] bool Approve,

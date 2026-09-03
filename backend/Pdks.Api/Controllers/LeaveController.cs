@@ -186,7 +186,8 @@ public class LeaveController : ControllerBase
         try
         {
             var created = await _leave.CreateAsync(pid.Value, req.LeaveTypeId,
-                req.StartDate, req.EndDate, req.Title, req.Reason, req.Days, ct);
+                req.StartDate, req.EndDate, req.Title, req.Reason, req.Days,
+                req.HalfDay ?? HalfDayPeriod.None, ct);
 
             // Departman bazlı onay zincirini kur ve ilk onaylayanı bilgilendir
             var chain = await _approvals.BuildChainAsync(RequestKind.Leave, created.Id, pid.Value, ct);
@@ -318,7 +319,7 @@ public class LeaveController : ControllerBase
         r.Personnel is null ? "" : r.Personnel.FirstName + " " + r.Personnel.LastName,
         r.Personnel?.SicilNo ?? "",
         r.LeaveTypeId, r.LeaveType?.Name ?? "", r.LeaveType?.DeductsFromAnnual ?? false,
-        r.StartDate, r.EndDate, r.TotalDays, r.Title, r.Reason, r.Status.ToString(),
+        r.StartDate, r.EndDate, r.TotalDays, r.HalfDay.ToString(), r.Title, r.Reason, r.Status.ToString(),
         r.ApproverId,
         r.Approver == null ? null : r.Approver.FirstName + " " + r.Approver.LastName,
         r.ManagerComment, r.RequestedAt, r.DecidedAt,

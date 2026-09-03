@@ -51,7 +51,7 @@ public class LeaveService
     /// <summary>Yeni izin talebi oluşturur; yıllık izinse bakiyeden rezerve eder.</summary>
     public async Task<LeaveRequest> CreateAsync(int personnelId, int leaveTypeId,
         DateOnly start, DateOnly end, string? title, string? reason, decimal? days,
-        CancellationToken ct = default)
+        HalfDayPeriod halfDay = HalfDayPeriod.None, CancellationToken ct = default)
     {
         if (end < start)
             throw new InvalidOperationException("Bitiş tarihi başlangıçtan önce olamaz.");
@@ -64,10 +64,23 @@ public class LeaveService
 
         // Talep sahibi gün girebilir; aksi halde hafta sonu + resmî tatil hariç hesaplanır.
         var calc = await CalculateLeaveDaysAsync(start, end, ct);
-        var totalDays = days is > 0 ? days.Value : calc;
-        var span = end.DayNumber - start.DayNumber + 1; // takvim günü üst sınırı
-        if (totalDays <= 0 || totalDays > span)
-            throw new InvalidOperationException("Gün sayısı geçersiz (0 ile tarih aralığı arasında olmalı).");
+        decimal totalDays;
+        if (halfDay != HalfDayPeriod.None)
+        {
+            // Yarım gün izin yalnızca tek bir gün için ve o gün çalışma günüyse geçerlidir → 0.5 gün.
+            if (start != end)
+                throw new InvalidOperationException("Yarım gün izin yalnızca tek bir gün için seçilebilir.");
+            if (calc <= 0)
+                throw new InvalidOperationException("Seçilen gün hafta sonu veya resmî tatil olduğundan yarım gün izne uygun değil.");
+            totalDays = 0.5m;
+        }
+        else
+        {
+            totalDays = days is > 0 ? days.Value : calc;
+            var span = end.DayNumber - start.DayNumber + 1; // takvim günü üst sınırı
+            if (totalDays <= 0 || totalDays > span)
+                throw new InvalidOperationException("Gün sayısı geçersiz (0 ile tarih aralığı arasında olmalı).");
+        }
 
         // Çakışan (onaylı/bekleyen) talep kontrolü
         var overlaps = await _db.LeaveRequests.AnyAsync(r =>
@@ -93,6 +106,7 @@ public class LeaveService
             StartDate = start,
             EndDate = end,
             TotalDays = totalDays,
+            HalfDay = halfDay,
             Title = title,
             Reason = reason,
             Status = LeaveStatus.Pending,

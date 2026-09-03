@@ -20,6 +20,7 @@ export interface CreateLeaveInput {
   title?: string;
   reason?: string;
   days?: number;
+  halfDay?: 'None' | 'Morning' | 'Afternoon';
 }
 
 export const leaveApi = {

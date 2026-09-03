@@ -177,6 +177,7 @@ export interface LeaveRequest {
   startDate: string;
   endDate: string;
   totalDays: number;
+  halfDay: 'None' | 'Morning' | 'Afternoon';
   title?: string | null;
   reason?: string | null;
   status: LeaveStatus;

@@ -127,6 +127,7 @@ CREATE TABLE LeaveRequests (
     StartDate      DATE NOT NULL,
     EndDate        DATE NOT NULL,
     TotalDays      DECIMAL(6,2) NOT NULL,
+    HalfDay        INT NOT NULL DEFAULT 0,   -- 0=Tam gün,1=ÖÖ(0.5),2=ÖS(0.5)
     Title          NVARCHAR(150) NULL,
     Reason         NVARCHAR(1000) NULL,
     Status         INT NOT NULL DEFAULT 0,   -- 0=Pending,1=Approved,2=Rejected,3=Cancelled

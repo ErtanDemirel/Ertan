@@ -22,6 +22,19 @@ public enum LeaveStatus
     Cancelled = 3
 }
 
+/// <summary>Yarım gün izin dönemi. Yalnızca tek günlük izinlerde geçerlidir (0.5 gün sayılır).</summary>
+public enum HalfDayPeriod
+{
+    /// <summary>Tam gün (varsayılan).</summary>
+    None = 0,
+
+    /// <summary>Öğleden önce (yarım gün).</summary>
+    Morning = 1,
+
+    /// <summary>Öğleden sonra (yarım gün).</summary>
+    Afternoon = 2
+}
+
 /// <summary>Mesai hareket tipi.</summary>
 public enum AttendanceType
 {

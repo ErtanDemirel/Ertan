@@ -26,10 +26,15 @@ export default function LeaveScreen() {
   const [endDate, setEndDate] = useState('');
   const [days, setDays] = useState('');
   const [reason, setReason] = useState('');
+  const [halfDay, setHalfDay] = useState<'None' | 'Morning' | 'Afternoon'>('None');
   const [file, setFile] = useState<{ uri: string; name: string; type: string } | null>(null);
 
   const types = useQuery({ queryKey: ['leave-types'], queryFn: () => leaveApi.types() });
   const mine = useQuery({ queryKey: ['leave-my'], queryFn: () => leaveApi.my() });
+
+  // Yarım gün yalnızca tek günlük izinde (başlangıç = bitiş) geçerlidir.
+  const singleDay = startDate !== '' && startDate === endDate;
+  const isHalf = singleDay && halfDay !== 'None';
 
   const create = useMutation({
     mutationFn: async () => {
@@ -38,7 +43,8 @@ export default function LeaveScreen() {
         startDate, endDate,
         title: title || undefined,
         reason: reason || undefined,
-        days: days ? Number(days) : undefined,
+        days: isHalf ? undefined : (days ? Number(days) : undefined),
+        halfDay: isHalf ? halfDay : undefined,
       });
       if (file) await leaveApi.uploadAttachment(created.id, file);
       return created;
@@ -46,7 +52,7 @@ export default function LeaveScreen() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['leave-my'] });
       setShowForm(false);
-      setTypeId(null); setTitle(''); setStartDate(''); setEndDate(''); setDays(''); setReason(''); setFile(null);
+      setTypeId(null); setTitle(''); setStartDate(''); setEndDate(''); setDays(''); setReason(''); setHalfDay('None'); setFile(null);
       Alert.alert('Gönderildi', 'İzin talebiniz amirinize iletildi.');
     },
     onError: (e) => Alert.alert('Hata', apiError(e)),
@@ -126,8 +132,28 @@ export default function LeaveScreen() {
           <TextInput style={styles.input} value={startDate} onChangeText={setStartDate} placeholder="2026-09-10" placeholderTextColor={colors.muted} />
           <Text style={styles.label}>Bitiş (YYYY-AA-GG)</Text>
           <TextInput style={styles.input} value={endDate} onChangeText={setEndDate} placeholder="2026-09-12" placeholderTextColor={colors.muted} />
-          <Text style={styles.label}>Kullanılan Gün (boşsa otomatik hesaplanır)</Text>
-          <TextInput style={styles.input} value={days} onChangeText={setDays} keyboardType="number-pad" placeholder="örn. 3" placeholderTextColor={colors.muted} />
+
+          {singleDay && (
+            <>
+              <Text style={styles.label}>Süre (tek günlük izinde yarım gün seçebilirsiniz)</Text>
+              <View style={styles.chips}>
+                {([['None', 'Tam gün'], ['Morning', 'Yarım · ÖÖ'], ['Afternoon', 'Yarım · ÖS']] as const).map(([k, lbl]) => (
+                  <TouchableOpacity key={k} style={[styles.chip, halfDay === k && styles.chipActive]} onPress={() => setHalfDay(k)}>
+                    <Text style={[styles.chipText, halfDay === k && styles.chipTextActive]}>{lbl}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          )}
+
+          {isHalf ? (
+            <Text style={styles.halfNote}>Yarım gün izin: 0,5 gün olarak sayılır.</Text>
+          ) : (
+            <>
+              <Text style={styles.label}>Kullanılan Gün (boşsa otomatik hesaplanır)</Text>
+              <TextInput style={styles.input} value={days} onChangeText={setDays} keyboardType="number-pad" placeholder="örn. 3" placeholderTextColor={colors.muted} />
+            </>
+          )}
           <Text style={styles.label}>Açıklama</Text>
           <TextInput style={[styles.input, { height: 70 }]} value={reason} onChangeText={setReason} multiline placeholder="Neden..." placeholderTextColor={colors.muted} />
 
@@ -151,7 +177,7 @@ export default function LeaveScreen() {
             <View key={r.id} style={styles.reqCard}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.reqType}>{r.title || r.leaveTypeName}</Text>
-                <Text style={styles.reqDate}>{r.leaveTypeName} • {r.startDate} → {r.endDate} ({r.totalDays} gün)</Text>
+                <Text style={styles.reqDate}>{r.leaveTypeName} • {r.startDate} → {r.endDate} ({r.totalDays} gün{r.halfDay === 'Morning' ? ' · yarım ÖÖ' : r.halfDay === 'Afternoon' ? ' · yarım ÖS' : ''})</Text>
                 {r.managerComment ? <Text style={styles.reqComment}>Amir: {r.managerComment}</Text> : null}
               </View>
               <View style={{ alignItems: 'flex-end' }}>
@@ -188,6 +214,7 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { color: colors.muted, fontSize: 13 },
   chipTextActive: { color: '#fff', fontWeight: '600' },
+  halfNote: { backgroundColor: '#fef3c7', color: '#b45309', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginTop: 12, fontSize: 13, fontWeight: '600' },
   fileBtn: { borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed', borderRadius: 10, padding: 12, alignItems: 'center', marginTop: 12 },
   fileBtnText: { color: colors.muted, fontSize: 13 },
   submit: { backgroundColor: colors.primary, borderRadius: 10, padding: 14, alignItems: 'center', marginTop: 16 },

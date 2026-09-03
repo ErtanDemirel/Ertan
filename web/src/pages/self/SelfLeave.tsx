@@ -32,7 +32,8 @@ export default function SelfRequests() {
 }
 
 // ---------------- İzin ----------------
-const emptyLeave = { leaveTypeId: '', title: '', startDate: '', endDate: '', days: '', reason: '' };
+type HalfDay = 'None' | 'Morning' | 'Afternoon';
+const emptyLeave = { leaveTypeId: '', title: '', startDate: '', endDate: '', days: '', reason: '', halfDay: 'None' as HalfDay };
 function LeaveTab() {
   const qc = useQueryClient();
   const [show, setShow] = useState(false);
@@ -42,11 +43,17 @@ function LeaveTab() {
   const types = useQuery({ queryKey: ['leave-types'], queryFn: () => leaveApi.types() });
   const mine = useQuery({ queryKey: ['leave-my'], queryFn: () => leaveApi.my() });
 
+  // Yarım gün yalnızca tek günlük izinlerde (başlangıç = bitiş) geçerlidir.
+  const singleDay = !!form.startDate && form.startDate === form.endDate;
+  const isHalf = singleDay && form.halfDay !== 'None';
+
   const create = useMutation({
     mutationFn: async () => {
       const created = await leaveApi.create({
         leaveTypeId: Number(form.leaveTypeId), startDate: form.startDate, endDate: form.endDate,
-        title: form.title || null, reason: form.reason || null, days: form.days ? Number(form.days) : null,
+        title: form.title || null, reason: form.reason || null,
+        days: isHalf ? null : (form.days ? Number(form.days) : null),
+        halfDay: isHalf ? form.halfDay : null,
       });
       if (file) await leaveApi.uploadAttachment(created.id, file);
     },
@@ -54,7 +61,15 @@ function LeaveTab() {
     onError: (e) => setError(apiError(e)),
   });
   const cancel = useMutation({ mutationFn: (id: number) => leaveApi.cancel(id), onSuccess: () => qc.invalidateQueries({ queryKey: ['leave-my'] }), onError: (e) => alert(apiError(e)) });
-  const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const set = (k: string, v: string) => setForm((f) => {
+    const next = { ...f, [k]: v };
+    // Başlangıç seçilince bitiş boşsa aynı güne çek (tek gün + yarım gün kolaylığı)
+    if (k === 'startDate' && !f.endDate) next.endDate = v;
+    // Aralık tek gün değilse yarım gün seçimini sıfırla
+    const single = !!next.startDate && next.startDate === next.endDate;
+    if (!single) next.halfDay = 'None';
+    return next;
+  });
   const balance = mine.data?.balance;
 
   return (
@@ -84,7 +99,23 @@ function LeaveTab() {
               <Field label="Başlangıç *"><input type="date" className="input" value={form.startDate} onChange={(e) => set('startDate', e.target.value)} /></Field>
               <Field label="Bitiş *"><input type="date" className="input" value={form.endDate} onChange={(e) => set('endDate', e.target.value)} /></Field>
             </div>
-            <Field label="Kullanılan Gün" hint="Boşsa hafta sonu + resmî tatil hariç otomatik hesaplanır"><input type="number" className="input" value={form.days} onChange={(e) => set('days', e.target.value)} /></Field>
+            {singleDay && (
+              <Field label="Süre" hint="Tek günlük izinde yarım gün seçebilirsiniz (0,5 gün)">
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" onClick={() => set('halfDay', 'None')}
+                    className={`rounded-lg border px-3 py-1.5 text-sm font-medium ${form.halfDay === 'None' ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-slate-200 text-slate-500'}`}>Tam gün</button>
+                  <button type="button" onClick={() => set('halfDay', 'Morning')}
+                    className={`rounded-lg border px-3 py-1.5 text-sm font-medium ${form.halfDay === 'Morning' ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-slate-200 text-slate-500'}`}>Yarım gün · Öğleden önce</button>
+                  <button type="button" onClick={() => set('halfDay', 'Afternoon')}
+                    className={`rounded-lg border px-3 py-1.5 text-sm font-medium ${form.halfDay === 'Afternoon' ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-slate-200 text-slate-500'}`}>Yarım gün · Öğleden sonra</button>
+                </div>
+              </Field>
+            )}
+            {isHalf ? (
+              <div className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">Yarım gün izin: <strong>0,5 gün</strong> olarak sayılır.</div>
+            ) : (
+              <Field label="Kullanılan Gün" hint="Boşsa hafta sonu + resmî tatil hariç otomatik hesaplanır"><input type="number" className="input" value={form.days} onChange={(e) => set('days', e.target.value)} /></Field>
+            )}
             <Field label="Açıklama"><textarea className="input" rows={2} value={form.reason} onChange={(e) => set('reason', e.target.value)} /></Field>
             <Field label="Dosya (rapor/foto/PDF)"><input type="file" accept=".pdf,.jpg,.jpeg,.png" className="input" onChange={(e) => setFile(e.target.files?.[0] ?? null)} /></Field>
             <button className="btn-primary w-full" onClick={() => create.mutate()} disabled={create.isPending}>{create.isPending ? 'Gönderiliyor...' : 'Gönder'}</button>
@@ -97,7 +128,7 @@ function LeaveTab() {
             <div key={r.id} className="card p-4">
               <div className="flex items-start justify-between">
                 <div><div className="font-medium text-slate-800">{r.title || r.leaveTypeName}</div>
-                  <div className="text-sm text-slate-500">{r.leaveTypeName} • {r.startDate} → {r.endDate} ({r.totalDays} gün)</div></div>
+                  <div className="text-sm text-slate-500">{r.leaveTypeName} • {r.startDate} → {r.endDate} ({r.totalDays} gün{r.halfDay === 'Morning' ? ' · yarım gün ÖÖ' : r.halfDay === 'Afternoon' ? ' · yarım gün ÖS' : ''})</div></div>
                 <StatusBadge status={r.status} />
               </div>
               {r.managerComment && <div className="mt-2 text-xs italic text-slate-400">Not: {r.managerComment}</div>}
