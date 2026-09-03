@@ -57,7 +57,7 @@ yönetim paneli ve Expo/React Native mobil uygulama.
 | Modül | Açıklama |
 |-------|----------|
 | **Sabit QR** | QR artık her seferinde değişmez; lokasyona özel **tek sefer üretilip yazdırılan** imzalı kod. Güvenlik konum (geofence) + gerektiğinde anahtar yenileme ile sağlanır. |
-| **Bordro dağıtımı** | İK, personel/dönem bazında bordro PDF yükler; personel web/mobil'den **kendi bordrosunu** görüp indirir (`PayrollController`, web `Bordro`, mobil `Bordro`). |
+| **Bordro dağıtımı** | Yalnızca **bordro sorumlusu** yükler/dağıtır; personel web/mobil'den **kendi (dağıtılmış) bordrosunu** görüp indirir. **Çok sayfalı tek PDF'i TC'ye göre otomatik ayırıp** kişilere atar (eşleşmeyen sayfalar listelenir). Örnek dosya: `database/samples/ornek-bordro-cok-sayfa.pdf`. |
 | **Gelişmiş izin talebi** | Başlık, tür, tarih, **kullanılan gün** ve **dosya eki** (rapor/foto/PDF). Onaylı izinler için **otomatik dolan Word izin belgesi** üretilir (`Templates/izin_belgesi_template.docx`, yer tutucuları kendi belgenizle değiştirin). |
 | **Personel self-servis (web)** | Personel de web'e girip izin talebi açar, duyuru/yemek/bordro/servis bilgisini görür (`/me/*`). |
 | **İş başvurusu + Aday yönetimi** | Kamuya açık başvuru formu (`/basvuru`), İK aday listesi/detayı; **TCKN ile geçmiş çalışan eşleştirmesi** (daha önce çalıştı mı, ne kadar, çıkış yaptı mı). |

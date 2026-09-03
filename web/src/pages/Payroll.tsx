@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Upload, Download, Trash2, ShieldAlert, Send } from 'lucide-react';
+import { Upload, Download, Trash2, ShieldAlert, Send, FileStack, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { payrollApi, personnelApi, downloadFile } from '../api/services';
 import { apiError } from '../api/client';
 import { Modal, Field, Spinner, EmptyState, Toggle } from '../components/ui';
@@ -14,6 +14,10 @@ export default function PayrollPage() {
   const now = new Date();
   const [open, setOpen] = useState(false);
   const [distOpen, setDistOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importForm, setImportForm] = useState({ year: String(now.getFullYear()), month: String(now.getMonth() + 1) });
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importResult, setImportResult] = useState<{ matched: number; unmatched: string[] } | null>(null);
   const [error, setError] = useState('');
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [notifyInApp, setNotifyInApp] = useState(true);
@@ -42,6 +46,11 @@ export default function PayrollPage() {
   const remove = useMutation({
     mutationFn: (id: number) => payrollApi.remove(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['payroll'] }),
+    onError: (e) => alert(apiError(e)),
+  });
+  const importPdf = useMutation({
+    mutationFn: () => payrollApi.importPdf(Number(importForm.year), Number(importForm.month), importFile!),
+    onSuccess: (r) => { qc.invalidateQueries({ queryKey: ['payroll'] }); setImportResult({ matched: r.matched.length, unmatched: r.unmatched }); setImportFile(null); },
     onError: (e) => alert(apiError(e)),
   });
 
@@ -78,12 +87,13 @@ export default function PayrollPage() {
           <button className="btn-primary !bg-emerald-600 hover:!bg-emerald-700" disabled={selected.size === 0} onClick={() => setDistOpen(true)}>
             <Send size={16} /> Dağıt ({selected.size})
           </button>
+          <button className="btn-secondary" onClick={() => { setImportResult(null); setImportOpen(true); }}><FileStack size={16} /> PDF'ten Ayır</button>
           <button className="btn-primary" onClick={() => { setError(''); setOpen(true); }}><Upload size={16} /> Bordro Yükle</button>
         </div>
       </div>
 
       <p className="rounded-lg bg-blue-50 px-3 py-2 text-xs text-blue-700">
-        Not: Çok sayfalı tek PDF'ten TC'ye göre otomatik sayfa ayırıp dağıtma özelliği için örnek PDF'i paylaştığınızda motoru kurup açacağız. Şimdilik kişi bazında yükleme + toplu dağıtım aktif.
+        <b>PDF'ten Ayır:</b> Çok sayfalı tek bordro PDF'ini yükleyin; sistem her sayfadaki T.C. Kimlik No'ya göre kişiye ait bordroyu otomatik ayırır. Eşleşmeyen sayfalar listelenir; onları tek tek yükleyebilirsiniz. Ardından seçip <b>Dağıt</b> ile bildirim gönderin. Her personel yalnızca kendi bordrosunu görür.
       </p>
 
       {list.isLoading ? <Spinner /> : (list.data?.length ?? 0) === 0 ? (
@@ -167,6 +177,52 @@ export default function PayrollPage() {
           <Toggle checked={notifyInApp} onChange={setNotifyInApp} label="Uygulama içi bildirim gönder" />
           <Toggle checked={notifySms} onChange={setNotifySms} label="SMS gönder (telefonu olanlara)" />
         </div>
+      </Modal>
+
+      {/* PDF'ten otomatik ayır */}
+      <Modal open={importOpen} onClose={() => setImportOpen(false)} title="PDF'ten Otomatik Ayır" wide
+        footer={importResult ? (
+          <button className="btn-primary" onClick={() => setImportOpen(false)}>Kapat</button>
+        ) : (
+          <>
+            <button className="btn-secondary" onClick={() => setImportOpen(false)}>Vazgeç</button>
+            <button className="btn-primary" onClick={() => importPdf.mutate()} disabled={!importFile || importPdf.isPending}>
+              {importPdf.isPending ? 'İşleniyor...' : 'Yükle ve Ayır'}
+            </button>
+          </>
+        )}>
+        {importResult ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+              <CheckCircle2 size={16} /> {importResult.matched} bordro kişilere eşleştirildi (dağıtılmayı bekliyor).
+            </div>
+            {importResult.unmatched.length > 0 ? (
+              <div>
+                <div className="mb-1 flex items-center gap-2 text-sm font-medium text-amber-700">
+                  <AlertTriangle size={16} /> Eşleşmeyen sayfalar ({importResult.unmatched.length}) — bunları tek tek yükleyin:
+                </div>
+                <ul className="max-h-56 overflow-auto rounded-lg border border-slate-200 p-2 text-sm text-slate-600">
+                  {importResult.unmatched.map((u, i) => <li key={i} className="border-b border-slate-50 py-1">{u}</li>)}
+                </ul>
+              </div>
+            ) : <p className="text-sm text-slate-500">Tüm sayfalar eşleşti. 🎉</p>}
+            <p className="text-xs text-slate-400">Şimdi listeden bordroları seçip "Dağıt" ile bildirim gönderebilirsiniz.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</div>}
+            <p className="text-sm text-slate-500">Çok sayfalı tek bordro PDF'ini yükleyin. Her sayfadaki TC'ye göre kişilere otomatik atanır.</p>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Yıl"><input type="number" className="input" value={importForm.year} onChange={(e) => setImportForm({ ...importForm, year: e.target.value })} /></Field>
+              <Field label="Ay">
+                <select className="input" value={importForm.month} onChange={(e) => setImportForm({ ...importForm, month: e.target.value })}>
+                  {months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+                </select>
+              </Field>
+            </div>
+            <Field label="Bordro PDF (çok sayfalı) *"><input type="file" accept=".pdf" className="input" onChange={(e) => setImportFile(e.target.files?.[0] ?? null)} /></Field>
+          </div>
+        )}
       </Modal>
     </div>
   );

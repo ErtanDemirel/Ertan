@@ -23,10 +23,12 @@ public class PayrollController : ControllerBase
     private readonly FileStorageService _files;
     private readonly AuditService _audit;
     private readonly NotificationService _notify;
+    private readonly PayrollPdfService _pdf;
 
-    public PayrollController(AppDbContext db, FileStorageService files, AuditService audit, NotificationService notify)
+    public PayrollController(AppDbContext db, FileStorageService files, AuditService audit,
+        NotificationService notify, PayrollPdfService pdf)
     {
-        _db = db; _files = files; _audit = audit; _notify = notify;
+        _db = db; _files = files; _audit = audit; _notify = notify; _pdf = pdf;
     }
 
     private bool CanDistribute => User.CanDistributePayroll();
@@ -64,6 +66,68 @@ public class PayrollController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
+    }
+
+    /// <summary>
+    /// Bordro sorumlusu: ÇOK SAYFALI tek PDF'i TC'ye göre kişilere ayırır ve her kişiye
+    /// kendi sayfa(lar)ını içeren bordroyu (henüz dağıtılmamış) atar. Eşleşmeyen sayfalar döner.
+    /// </summary>
+    [HttpPost("import-pdf")]
+    [RequestSizeLimit(80 * 1024 * 1024)]
+    public async Task<ActionResult<PayslipMatchResult>> ImportPdf(
+        [FromForm] int year, [FromForm] int month, IFormFile file, CancellationToken ct)
+    {
+        if (!CanDistribute) return Deny();
+        if (month < 1 || month > 12) return BadRequest(new { message = "Ay 1-12 arasında olmalı." });
+        if (file is null || file.Length == 0) return BadRequest(new { message = "PDF seçilmedi." });
+
+        byte[] bytes;
+        using (var ms = new MemoryStream()) { await file.CopyToAsync(ms, ct); bytes = ms.ToArray(); }
+
+        List<PayrollPdfService.ExtractedGroup> groups;
+        try { groups = _pdf.Extract(bytes); }
+        catch (Exception ex) { return BadRequest(new { message = "PDF okunamadı: " + ex.Message }); }
+
+        var tcs = groups.Where(g => g.Tc != null).Select(g => g.Tc!).Distinct().ToList();
+        var persons = await _db.Personnel
+            .Where(p => p.NationalId != null && tcs.Contains(p.NationalId))
+            .ToListAsync(ct);
+        var map = persons.GroupBy(p => p.NationalId!).ToDictionary(g => g.Key, g => g.First());
+
+        var matched = new List<(Payslip slip, Personnel person)>();
+        var unmatched = new List<string>();
+
+        foreach (var g in groups)
+        {
+            var range = g.FromPage == g.ToPage ? $"Sayfa {g.FromPage}" : $"Sayfa {g.FromPage}-{g.ToPage}";
+            if (g.Tc != null && map.TryGetValue(g.Tc, out var person))
+            {
+                var info = await _files.SaveBytesAsync(g.Pdf,
+                    $"bordro-{person.SicilNo}-{year}-{month}.pdf", "payroll", "application/pdf", ct);
+                var slip = new Payslip
+                {
+                    PersonnelId = person.Id, Year = year, Month = month,
+                    FileName = info.FileName, StoredPath = info.StoredPath,
+                    ContentType = "application/pdf", SizeBytes = info.SizeBytes,
+                    UploadedByUserId = User.GetUserId(), IsDistributed = false,
+                    Note = $"PDF {range}"
+                };
+                _db.Payslips.Add(slip);
+                matched.Add((slip, person));
+            }
+            else
+            {
+                unmatched.Add(g.Tc != null
+                    ? $"{range}: TC {g.Tc} sistemde bulunamadı"
+                    : $"{range}: TC tespit edilemedi ({g.Preview}…)");
+            }
+        }
+
+        await _db.SaveChangesAsync(ct);
+        await _audit.LogAsync("payroll.import_pdf", User.GetUserId(),
+            $"{year}/{month} matched={matched.Count} unmatched={unmatched.Count}", Ip(), ct);
+
+        return Ok(new PayslipMatchResult(matched.Select(x => Map(x.slip, x.person)).ToList(), unmatched));
     }
 
     /// <summary>Bordro sorumlusu: bordroları listeler (personel/yıl/dağıtım filtresi).</summary>

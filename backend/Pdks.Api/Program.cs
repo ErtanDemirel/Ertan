@@ -54,6 +54,7 @@ builder.Services.AddSingleton<TokenService>();
 builder.Services.AddSingleton<QrTokenService>();
 builder.Services.AddSingleton<FileStorageService>();
 builder.Services.AddSingleton<LeaveDocumentService>();
+builder.Services.AddSingleton<PayrollPdfService>();
 builder.Services.AddScoped<LeaveService>();
 builder.Services.AddScoped<AuditService>();
 builder.Services.AddScoped<NotificationService>();

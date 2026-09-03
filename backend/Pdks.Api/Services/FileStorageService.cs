@@ -71,6 +71,27 @@ public class FileStorageService
         return new StoredFileInfo(Path.GetFileName(file.FileName), rel, contentType, file.Length);
     }
 
+    /// <summary>Sunucuda üretilen ham baytları güvenli şekilde saklar (örn. PDF'ten ayrılan tek sayfa).</summary>
+    public async Task<StoredFileInfo> SaveBytesAsync(byte[] data, string fileName, string category,
+        string contentType, CancellationToken ct = default)
+    {
+        if (data is null || data.Length == 0)
+            throw new InvalidOperationException("Boş içerik.");
+
+        var ext = Path.GetExtension(fileName);
+        if (string.IsNullOrEmpty(ext)) ext = ".pdf";
+        var safeCategory = Path.GetFileName(category);
+        var dir = Path.Combine(_root, safeCategory);
+        Directory.CreateDirectory(dir);
+
+        var storedName = $"{Guid.NewGuid():N}{ext}";
+        var fullPath = Path.Combine(dir, storedName);
+        await File.WriteAllBytesAsync(fullPath, data, ct);
+
+        var rel = Path.Combine(safeCategory, storedName).Replace('\\', '/');
+        return new StoredFileInfo(fileName, rel, contentType, data.Length);
+    }
+
     /// <summary>Saklanan dosyayı okuma akışı olarak açar. Yol kök dışına çıkamaz.</summary>
     public (Stream stream, string contentType) Open(string storedPath, string contentType)
     {

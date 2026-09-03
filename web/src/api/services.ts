@@ -163,6 +163,13 @@ export const payrollApi = {
   },
   fileUrl: (id: number) => `/api/payroll/${id}/file`,
   remove: (id: number) => api.delete(`/api/payroll/${id}`).then((r) => r.data),
+  importPdf: (year: number, month: number, file: File) => {
+    const fd = new FormData();
+    fd.append('year', String(year));
+    fd.append('month', String(month));
+    fd.append('file', file);
+    return api.post<{ matched: Payslip[]; unmatched: string[] }>('/api/payroll/import-pdf', fd).then((r) => r.data);
+  },
 };
 
 // ---------------- Aday / İş Başvurusu ----------------
