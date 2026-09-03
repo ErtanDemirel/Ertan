@@ -35,6 +35,7 @@ import SelfDirectory from './pages/self/SelfDirectory';
 import SelfAttendance from './pages/self/SelfAttendance';
 import SelfCalculators from './pages/self/SelfCalculators';
 import SelfContact from './pages/self/SelfContact';
+import SelfWorkCalendar from './pages/self/SelfWorkCalendar';
 
 function ManagerGuard({ children }: { children: JSX.Element }) {
   const { isAuthenticated, isManager } = useAuth();
@@ -97,6 +98,7 @@ export default function App() {
         <Route path="voice" element={<SelfVoice />} />
         <Route path="directory" element={<SelfDirectory />} />
         <Route path="attendance" element={<SelfAttendance />} />
+        <Route path="calendar" element={<SelfWorkCalendar />} />
         <Route path="calc" element={<SelfCalculators />} />
         <Route path="contact" element={<SelfContact />} />
       </Route>

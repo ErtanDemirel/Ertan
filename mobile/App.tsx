@@ -28,6 +28,7 @@ import NotificationsScreen from './src/screens/NotificationsScreen';
 import VoiceScreen from './src/screens/VoiceScreen';
 import CalcScreen from './src/screens/CalcScreen';
 import ContactScreen from './src/screens/ContactScreen';
+import WorkCalendarScreen from './src/screens/WorkCalendarScreen';
 import { colors, shadow } from './src/theme';
 
 const queryClient = new QueryClient({
@@ -117,6 +118,7 @@ function AppStack() {
       <Stack.Screen name="Directory" component={DirectoryScreen} options={{ title: 'Şirket Rehberi' }} />
       <Stack.Screen name="Notes" component={NotesScreen} options={{ title: 'Notlarım' }} />
       <Stack.Screen name="AttendanceHistory" component={AttendanceHistoryScreen} options={{ title: 'Mesai Geçmişi' }} />
+      <Stack.Screen name="WorkCalendar" component={WorkCalendarScreen} options={{ title: 'Çalışma Takvimim' }} />
       <Stack.Screen name="Voice" component={VoiceScreen} options={{ title: 'Çalışan Sesi' }} />
       <Stack.Screen name="Calc" component={CalcScreen} options={{ title: 'Hesaplama' }} />
       <Stack.Screen name="Contact" component={ContactScreen} options={{ title: 'İletişim Bilgilerim' }} />

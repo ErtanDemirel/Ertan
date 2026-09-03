@@ -1,10 +1,11 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { CalendarDays, Megaphone, UtensilsCrossed, Wallet, Bus, LogOut, ShieldCheck, MessagesSquare, Users, Clock, Calculator, Phone } from 'lucide-react';
+import { CalendarDays, Megaphone, UtensilsCrossed, Wallet, Bus, LogOut, ShieldCheck, MessagesSquare, Users, Clock, Calculator, Phone, CalendarCheck } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
 
 const tabs = [
   { to: '/me/leave', label: 'Taleplerim', icon: CalendarDays },
   { to: '/me/attendance', label: 'Mesaim', icon: Clock },
+  { to: '/me/calendar', label: 'Devamlılık', icon: CalendarCheck },
   { to: '/me/announcements', label: 'Duyurular', icon: Megaphone },
   { to: '/me/meals', label: 'Yemek', icon: UtensilsCrossed },
   { to: '/me/payroll', label: 'Bordrom', icon: Wallet },

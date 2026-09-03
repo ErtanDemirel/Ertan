@@ -120,6 +120,11 @@ export const voiceApi = {
     api.post<Feedback>('/api/voice', b).then((r) => r.data),
 };
 
+export interface Holiday { id: number; date: string; name: string; isHalfDay: boolean; }
+export const holidayApi = {
+  list: (year?: number) => api.get<Holiday[]>('/api/holidays', { params: { year } }).then((r) => r.data),
+};
+
 export interface ContactUpdate {
   id: number; personnelName: string; phoneNumber?: string | null; email?: string | null;
   address?: string | null; emergencyContactName?: string | null; emergencyContactPhone?: string | null;

@@ -18,7 +18,8 @@ export default function MoreScreen() {
       items: [
         { icon: 'calendar-outline', title: 'İzin / Talep', sub: 'İzin, avans, masraf', go: 'Talepler' },
         { icon: 'qr-code-outline', title: 'QR Mesai', sub: 'Giriş / çıkış', go: 'Mesai' },
-        { icon: 'time-outline', title: 'Mesai geçmişi', sub: 'Çalışma takvimim', go: 'AttendanceHistory' },
+        { icon: 'time-outline', title: 'Mesai geçmişi', sub: 'Giriş/çıkış', go: 'AttendanceHistory' },
+        { icon: 'calendar-number-outline', title: 'Çalışma takvimim', sub: 'Devamlılık', go: 'WorkCalendar' },
         { icon: 'wallet-outline', title: 'Bordrom', sub: 'Maaş bordroları', go: 'Payroll' },
       ],
     },
