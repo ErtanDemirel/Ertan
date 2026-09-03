@@ -32,6 +32,13 @@ export default function MoreScreen() {
       ],
     },
     {
+      header: 'Çalışan Sesi',
+      items: [
+        { icon: 'megaphone-outline', title: 'Öneri / Şikayet', sub: 'Görüşünü paylaş', go: 'Voice' },
+        { icon: 'warning-outline', title: 'Ramak kala', sub: 'İş güvenliği bildirimi', go: 'Voice' },
+      ],
+    },
+    {
       header: 'Kişisel',
       items: [
         { icon: 'document-text-outline', title: 'Notlarım', sub: 'Kişisel notlar', go: 'Notes' },

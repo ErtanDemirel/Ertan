@@ -29,6 +29,7 @@ public static class DbMaintenance
 
         // Sonradan eklenen tablo(lar):
         await EnsurePushTokensTableAsync(db, logger, ct);
+        await EnsureFeedbackTableAsync(db, logger, ct);
     }
 
     private static async Task<bool> ColumnExistsAsync(AppDbContext db, string table, string column, CancellationToken ct)
@@ -67,6 +68,55 @@ public static class DbMaintenance
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Şema uyumlama atlandı: {Table}.{Column}", table, column);
+        }
+    }
+
+    private static async Task EnsureFeedbackTableAsync(AppDbContext db, ILogger logger, CancellationToken ct)
+    {
+        try
+        {
+            if (await TableExistsAsync(db, "FeedbackItems", ct)) return;
+
+            var sql = db.Database.IsSqlite()
+                ? @"CREATE TABLE IF NOT EXISTS FeedbackItems (
+                        Id INTEGER NOT NULL CONSTRAINT PK_FeedbackItems PRIMARY KEY AUTOINCREMENT,
+                        PersonnelId INTEGER NULL,
+                        Kind INTEGER NOT NULL,
+                        Title TEXT NULL,
+                        Body TEXT NOT NULL,
+                        Location TEXT NULL,
+                        IsAnonymous INTEGER NOT NULL DEFAULT 0,
+                        Status INTEGER NOT NULL DEFAULT 0,
+                        HandlerComment TEXT NULL,
+                        HandledByUserId INTEGER NULL,
+                        CreatedAt TEXT NOT NULL,
+                        HandledAt TEXT NULL,
+                        CONSTRAINT FK_FB_Personnel FOREIGN KEY (PersonnelId) REFERENCES Personnel(Id) ON DELETE SET NULL,
+                        CONSTRAINT FK_FB_Handler FOREIGN KEY (HandledByUserId) REFERENCES Users(Id)
+                    );"
+                : @"CREATE TABLE FeedbackItems (
+                        Id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_FeedbackItems PRIMARY KEY,
+                        PersonnelId INT NULL,
+                        Kind INT NOT NULL,
+                        Title NVARCHAR(150) NULL,
+                        Body NVARCHAR(2000) NOT NULL,
+                        Location NVARCHAR(150) NULL,
+                        IsAnonymous BIT NOT NULL DEFAULT 0,
+                        Status INT NOT NULL DEFAULT 0,
+                        HandlerComment NVARCHAR(500) NULL,
+                        HandledByUserId INT NULL,
+                        CreatedAt DATETIME2 NOT NULL,
+                        HandledAt DATETIME2 NULL,
+                        CONSTRAINT FK_FB_Personnel FOREIGN KEY (PersonnelId) REFERENCES Personnel(Id) ON DELETE SET NULL,
+                        CONSTRAINT FK_FB_Handler FOREIGN KEY (HandledByUserId) REFERENCES Users(Id)
+                    );";
+            await db.Database.ExecuteSqlRawAsync(sql, ct);
+            await db.Database.ExecuteSqlRawAsync("CREATE INDEX IX_FB_KindStatus ON FeedbackItems(Kind, Status);", ct);
+            logger.LogInformation("Şema uyumlandı: FeedbackItems tablosu oluşturuldu.");
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Şema uyumlama atlandı: FeedbackItems tablosu");
         }
     }
 

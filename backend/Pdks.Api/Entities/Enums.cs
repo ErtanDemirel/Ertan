@@ -78,3 +78,21 @@ public enum StepStatus
     Rejected = 2,
     Skipped = 3
 }
+
+/// <summary>Çalışan sesi / geri bildirim türü.</summary>
+public enum FeedbackKind
+{
+    Suggestion = 0,  // Öneri
+    Complaint = 1,   // Şikayet
+    NearMiss = 2,    // Ramak kala (iş güvenliği)
+    Request = 3      // Dilek / istek
+}
+
+/// <summary>Çalışan sesi kaydının durumu.</summary>
+public enum FeedbackStatus
+{
+    New = 0,        // Yeni
+    Reviewing = 1,  // İnceleniyor
+    Resolved = 2,   // Çözüldü
+    Closed = 3      // Kapatıldı
+}

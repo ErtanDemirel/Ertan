@@ -21,6 +21,7 @@ import PayrollPage from './pages/Payroll';
 import CandidatesPage from './pages/Candidates';
 import ServiceAnalyticsPage from './pages/ServiceAnalytics';
 import ReportsPage from './pages/Reports';
+import EmployeeVoicePage from './pages/EmployeeVoice';
 import JobApplicationForm from './pages/JobApplicationForm';
 import SelfLayout from './pages/self/SelfLayout';
 import SelfLeave from './pages/self/SelfLeave';
@@ -28,6 +29,9 @@ import SelfAnnouncements from './pages/self/SelfAnnouncements';
 import SelfMeals from './pages/self/SelfMeals';
 import SelfPayroll from './pages/self/SelfPayroll';
 import SelfService from './pages/self/SelfService';
+import SelfVoice from './pages/self/SelfVoice';
+import SelfDirectory from './pages/self/SelfDirectory';
+import SelfAttendance from './pages/self/SelfAttendance';
 
 function ManagerGuard({ children }: { children: JSX.Element }) {
   const { isAuthenticated, isManager } = useAuth();
@@ -73,6 +77,7 @@ export default function App() {
         <Route path="locations" element={<LocationsPage />} />
         <Route path="attendance" element={<AttendancePage />} />
         <Route path="holidays" element={<HolidaysPage />} />
+        <Route path="voice" element={<EmployeeVoicePage />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="users" element={<UsersPage />} />
       </Route>
@@ -85,6 +90,9 @@ export default function App() {
         <Route path="meals" element={<SelfMeals />} />
         <Route path="payroll" element={<SelfPayroll />} />
         <Route path="service" element={<SelfService />} />
+        <Route path="voice" element={<SelfVoice />} />
+        <Route path="directory" element={<SelfDirectory />} />
+        <Route path="attendance" element={<SelfAttendance />} />
       </Route>
 
       <Route path="*" element={<RoleRedirect />} />

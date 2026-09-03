@@ -35,6 +35,7 @@ public class AppDbContext : DbContext
     public DbSet<ApprovalStep> ApprovalSteps => Set<ApprovalStep>();
     public DbSet<AdvanceRequest> AdvanceRequests => Set<AdvanceRequest>();
     public DbSet<ExpenseRequest> ExpenseRequests => Set<ExpenseRequest>();
+    public DbSet<FeedbackItem> FeedbackItems => Set<FeedbackItem>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -276,6 +277,14 @@ public class AppDbContext : DbContext
         {
             e.Property(x => x.Amount).HasPrecision(12, 2);
             e.HasOne(x => x.Personnel).WithMany().HasForeignKey(x => x.PersonnelId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ---- FeedbackItem (Çalışan Sesi) ----
+        b.Entity<FeedbackItem>(e =>
+        {
+            e.HasIndex(x => new { x.Kind, x.Status });
+            e.HasOne(x => x.Personnel).WithMany().HasForeignKey(x => x.PersonnelId).OnDelete(DeleteBehavior.SetNull);
+            e.HasOne(x => x.HandledBy).WithMany().HasForeignKey(x => x.HandledByUserId).OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

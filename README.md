@@ -65,6 +65,8 @@ yönetim paneli ve Expo/React Native mobil uygulama.
 | **Güvenlik sertleştirmesi** | Hesap kilidi (brute-force), giriş uçlarında rate limiting, şifre politikası, güvenlik başlıkları, denetim kaydı (audit log), yapılandırılabilir CORS, güvenli dosya yükleme (tür/boyut doğrulama, webroot dışında saklama). |
 | **Anlık (push) bildirim** | Mobil cihazlar **Expo Push** ile bildirim alır (bordro hazır, izin/onay sonucu, onay bekleyen talep). Uygulama-içi bildirim oluştukça kullanıcının kayıtlı cihazlarına da push gönderilir. `Push:Provider` = `Expo` (varsayılan) / `None`. |
 | **Raporlar (CSV)** | Amir/Admin için **Excel'de açılan CSV** çıktıları: personel listesi, izin talepleri (yarım gün dahil, tarih/durum filtreli), mesai giriş/çıkış, yıllık izin bakiyeleri. Bordro gibi hassas veriler raporlara **dahil edilmez**. |
+| **Çalışan Sesi** | Personel **öneri / şikayet / ramak kala (iş güvenliği) / dilek** gönderir (isteğe bağlı **anonim**); Amir/Admin görüntüler, durum (Yeni→İnceleniyor→Çözüldü) ve yanıt yazar. Web + mobil. |
+| **Şirket rehberi & Mesai geçmişim** | Web self-servis ve mobilde: çalışan dizini (ara, telefon/e-posta) ve kişinin kendi mesai giriş/çıkış geçmişi + aylık özet. |
 | **Güvenli şema güncelleme** | `EnsureCreated` + idempotent `DbMaintenance` uyumlayıcı: mevcut veritabanı veri kaybı olmadan yeni kolon/tablo alır. Üretim için EF Core migration'a hazır (bkz. `database/migrations/`). |
 
 ### Eklediğim "olmazsa olmaz" güvenlik/işlevsellik

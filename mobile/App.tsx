@@ -25,6 +25,7 @@ import DirectoryScreen from './src/screens/DirectoryScreen';
 import ServiceScreen from './src/screens/ServiceScreen';
 import AttendanceHistoryScreen from './src/screens/AttendanceHistoryScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen';
+import VoiceScreen from './src/screens/VoiceScreen';
 import { colors, shadow } from './src/theme';
 
 const queryClient = new QueryClient({
@@ -114,6 +115,7 @@ function AppStack() {
       <Stack.Screen name="Directory" component={DirectoryScreen} options={{ title: 'Şirket Rehberi' }} />
       <Stack.Screen name="Notes" component={NotesScreen} options={{ title: 'Notlarım' }} />
       <Stack.Screen name="AttendanceHistory" component={AttendanceHistoryScreen} options={{ title: 'Mesai Geçmişi' }} />
+      <Stack.Screen name="Voice" component={VoiceScreen} options={{ title: 'Çalışan Sesi' }} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Bildirimler' }} />
     </Stack.Navigator>
   );

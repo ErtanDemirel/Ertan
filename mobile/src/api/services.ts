@@ -106,6 +106,20 @@ export const directoryApi = {
     api.get<DirectoryEntry[]>('/api/me/directory', { params: { search } }).then((r) => r.data),
 };
 
+export type FeedbackKind = 'Suggestion' | 'Complaint' | 'NearMiss' | 'Request';
+export type FeedbackStatus = 'New' | 'Reviewing' | 'Resolved' | 'Closed';
+export interface Feedback {
+  id: number; kind: FeedbackKind; title?: string | null; body: string;
+  location?: string | null; isAnonymous: boolean; status: FeedbackStatus;
+  submitterName?: string | null; sicilNo?: string | null; handlerComment?: string | null;
+  createdAt: string; handledAt?: string | null;
+}
+export const voiceApi = {
+  my: () => api.get<Feedback[]>('/api/voice/my').then((r) => r.data),
+  create: (b: { kind: FeedbackKind; title?: string; body: string; location?: string; isAnonymous?: boolean }) =>
+    api.post<Feedback>('/api/voice', b).then((r) => r.data),
+};
+
 export interface MyService {
   mine: { routeName?: string | null; stop?: string | null; departure?: string | null; ret?: string | null; driver?: string | null; plate?: string | null } | null;
   routes: { name: string; stops?: string | null; departure?: string | null; ret?: string | null }[];

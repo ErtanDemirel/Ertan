@@ -1,7 +1,8 @@
 import { api } from './client';
 import type {
   AdvanceRequest, Announcement, AnnouncementReadStat, AppNotification, ApprovalTemplateStep,
-  Attendance, AuthResponse, Department, ExpenseRequest, Holiday, JobApplication, LeaveBalance,
+  Attendance, AuthResponse, Department, DirectoryEntry, ExpenseRequest, Feedback, FeedbackKind,
+  FeedbackStatus, Holiday, JobApplication, LeaveBalance,
   LeaveRequest, LeaveType, MealMenu, Paged, Payslip, PendingApproval, Personnel, QrPayload,
   ServiceAnalytics, ServiceRoute, Shift, WorkLocation,
 } from './types';
@@ -270,4 +271,27 @@ export const reportApi = {
   attendanceUrl: (p: { from?: string; to?: string } = {}) =>
     `/api/reports/attendance.csv${qs(p)}`,
   leaveBalancesUrl: (year?: number) => `/api/reports/leave-balances.csv${qs({ year })}`,
+};
+
+// ---------------- Çalışan Sesi (Feedback) ----------------
+export const voiceApi = {
+  my: () => api.get<Feedback[]>('/api/voice/my').then((r) => r.data),
+  create: (b: { kind: FeedbackKind; title?: string; body: string; location?: string; isAnonymous?: boolean }) =>
+    api.post<Feedback>('/api/voice', b).then((r) => r.data),
+  list: (kind?: string, status?: string) =>
+    api.get<Feedback[]>('/api/voice', { params: { kind, status } }).then((r) => r.data),
+  updateStatus: (id: number, status: FeedbackStatus, comment?: string) =>
+    api.post<Feedback>(`/api/voice/${id}/status`, { status, comment }).then((r) => r.data),
+};
+
+// ---------------- Şirket rehberi ----------------
+export const directoryApi = {
+  list: (search?: string) =>
+    api.get<DirectoryEntry[]>('/api/me/directory', { params: { search } }).then((r) => r.data),
+};
+
+// ---------------- Self mesai geçmişi ----------------
+export const selfAttendanceApi = {
+  my: (from?: string, to?: string) =>
+    api.get<Attendance[]>('/api/attendance/my', { params: { from, to } }).then((r) => r.data),
 };

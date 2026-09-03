@@ -339,6 +339,25 @@ CREATE TABLE PushTokens (
 CREATE UNIQUE INDEX IX_Push_Token ON PushTokens(Token);
 CREATE INDEX IX_Push_User ON PushTokens(UserId, IsActive);
 
+/* ---------------- Çalışan Sesi (öneri / şikayet / ramak kala / dilek) ---------------- */
+CREATE TABLE FeedbackItems (
+    Id              INT IDENTITY PRIMARY KEY,
+    PersonnelId     INT NULL,                 -- anonimde NULL
+    Kind            INT NOT NULL,             -- 0=Öneri,1=Şikayet,2=Ramak kala,3=Dilek
+    Title           NVARCHAR(150) NULL,
+    Body            NVARCHAR(2000) NOT NULL,
+    Location        NVARCHAR(150) NULL,       -- ramak kala için olay yeri
+    IsAnonymous     BIT NOT NULL DEFAULT 0,
+    Status          INT NOT NULL DEFAULT 0,   -- 0=Yeni,1=İnceleniyor,2=Çözüldü,3=Kapatıldı
+    HandlerComment  NVARCHAR(500) NULL,
+    HandledByUserId INT NULL,
+    CreatedAt       DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    HandledAt       DATETIME2 NULL,
+    CONSTRAINT FK_FB_Personnel FOREIGN KEY (PersonnelId) REFERENCES Personnel(Id) ON DELETE SET NULL,
+    CONSTRAINT FK_FB_Handler FOREIGN KEY (HandledByUserId) REFERENCES Users(Id)
+);
+CREATE INDEX IX_FB_KindStatus ON FeedbackItems(Kind, Status);
+
 /* ---------------- Departman & Onay Zinciri ---------------- */
 CREATE TABLE Departments (
     Id                 INT IDENTITY PRIMARY KEY,

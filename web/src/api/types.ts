@@ -342,3 +342,28 @@ export interface Attendance {
   distanceMeters: number;
   isWithinGeofence: boolean;
 }
+
+export type FeedbackKind = 'Suggestion' | 'Complaint' | 'NearMiss' | 'Request';
+export type FeedbackStatus = 'New' | 'Reviewing' | 'Resolved' | 'Closed';
+export interface Feedback {
+  id: number;
+  kind: FeedbackKind;
+  title?: string | null;
+  body: string;
+  location?: string | null;
+  isAnonymous: boolean;
+  status: FeedbackStatus;
+  submitterName?: string | null;
+  sicilNo?: string | null;
+  handlerComment?: string | null;
+  createdAt: string;
+  handledAt?: string | null;
+}
+
+export interface DirectoryEntry {
+  name: string;
+  title?: string | null;
+  department?: string | null;
+  phone?: string | null;
+  email?: string | null;
+}
