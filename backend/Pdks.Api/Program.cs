@@ -68,6 +68,15 @@ if (smsProvider.Equals("Netgsm", StringComparison.OrdinalIgnoreCase))
 else
     builder.Services.AddSingleton<ISmsSender, ConsoleSmsSender>();
 
+// Anlık (push) bildirim sağlayıcısı — varsayılan Expo Push.
+var pushProvider = builder.Configuration.GetValue<string>("Push:Provider") ?? "Expo";
+builder.Services.AddHttpClient("expo-push");
+if (pushProvider.Equals("None", StringComparison.OrdinalIgnoreCase) ||
+    pushProvider.Equals("Console", StringComparison.OrdinalIgnoreCase))
+    builder.Services.AddSingleton<IPushSender, NullPushSender>();
+else
+    builder.Services.AddSingleton<IPushSender, ExpoPushSender>();
+
 // ---------------- Auth ----------------
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -148,9 +157,19 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     var hasher = scope.ServiceProvider.GetRequiredService<PasswordHasher>();
-    // Not: Üretimde EF migration kullanın (dotnet ef database update).
-    // Hızlı başlangıç için şemayı modele göre oluşturur:
-    await db.Database.EnsureCreatedAsync();
+    var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("DbInit");
+
+    // EF migration mevcutsa (üretim yolu) onu uygula; yoksa hızlı başlangıç için şemayı
+    // modele göre oluştur ve sonradan eklenen kolon/tabloları idempotent olarak uyumla.
+    if (db.Database.GetMigrations().Any())
+    {
+        await db.Database.MigrateAsync();
+    }
+    else
+    {
+        await db.Database.EnsureCreatedAsync();
+        await DbMaintenance.ReconcileAsync(db, logger);
+    }
     await DbSeeder.SeedAsync(db, hasher);
 }
 

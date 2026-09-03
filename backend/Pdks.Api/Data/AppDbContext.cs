@@ -28,6 +28,7 @@ public class AppDbContext : DbContext
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<Holiday> Holidays => Set<Holiday>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<PushToken> PushTokens => Set<PushToken>();
     public DbSet<Department> Departments => Set<Department>();
     public DbSet<ApprovalStepTemplate> ApprovalStepTemplates => Set<ApprovalStepTemplate>();
     public DbSet<ApprovalRequest> ApprovalRequests => Set<ApprovalRequest>();
@@ -222,6 +223,14 @@ public class AppDbContext : DbContext
         b.Entity<Notification>(e =>
         {
             e.HasIndex(x => new { x.UserId, x.IsRead });
+            e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ---- PushToken ----
+        b.Entity<PushToken>(e =>
+        {
+            e.HasIndex(x => x.Token).IsUnique();
+            e.HasIndex(x => new { x.UserId, x.IsActive });
             e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         });
 

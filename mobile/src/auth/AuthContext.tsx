@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 import { authApi } from '../api/services';
 import { session } from '../api/client';
 import type { UserInfo } from '../api/types';
+import { registerForPush, unregisterForPush } from '../push';
 
 interface AuthState {
   user: UserInfo | null;
@@ -20,6 +21,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     session.hydrate().then((u) => {
       setUser(u);
       setReady(true);
+      if (u) registerForPush(); // oturum zaten açıksa cihazı kaydet
     });
   }, []);
 
@@ -31,8 +33,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const auth = await authApi.login(username, password);
         await session.save(auth);
         setUser(auth.user);
+        registerForPush(); // push cihazını kaydet (best-effort)
       },
       async logout() {
+        await unregisterForPush(); // bu cihaza artık bildirim gitmesin
         await session.clear();
         setUser(null);
       },

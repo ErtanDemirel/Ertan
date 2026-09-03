@@ -325,6 +325,20 @@ CREATE TABLE Notifications (
 );
 CREATE INDEX IX_Notif_User ON Notifications(UserId, IsRead);
 
+/* ---------------- Mobil Push Cihaz Token'ları ---------------- */
+CREATE TABLE PushTokens (
+    Id         INT IDENTITY PRIMARY KEY,
+    UserId     INT NOT NULL,
+    Token      NVARCHAR(200) NOT NULL,
+    Platform   NVARCHAR(20) NULL,        -- ios / android / web
+    IsActive   BIT NOT NULL DEFAULT 1,
+    CreatedAt  DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    LastUsedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT FK_Push_User FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE
+);
+CREATE UNIQUE INDEX IX_Push_Token ON PushTokens(Token);
+CREATE INDEX IX_Push_User ON PushTokens(UserId, IsActive);
+
 /* ---------------- Departman & Onay Zinciri ---------------- */
 CREATE TABLE Departments (
     Id                 INT IDENTITY PRIMARY KEY,

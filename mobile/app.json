@@ -18,7 +18,7 @@
       }
     },
     "android": {
-      "permissions": ["CAMERA", "ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
+      "permissions": ["CAMERA", "ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION", "POST_NOTIFICATIONS"]
     },
     "plugins": [
       [
@@ -28,6 +28,10 @@
       [
         "expo-location",
         { "locationWhenInUsePermission": "Mesai girişini iş yerinde doğrulamak için konum izni gereklidir." }
+      ],
+      [
+        "expo-notifications",
+        { "color": "#1e3a8a" }
       ]
     ],
     "extra": {

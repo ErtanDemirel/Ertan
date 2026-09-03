@@ -255,3 +255,19 @@ export const locationApi = {
     api.put<WorkLocation>(`/api/work-locations/${id}`, b).then((r) => r.data),
   remove: (id: number) => api.delete(`/api/work-locations/${id}`).then((r) => r.data),
 };
+
+// ---------------- Raporlar (CSV export) ----------------
+function qs(params: Record<string, string | number | boolean | undefined>): string {
+  const p = Object.entries(params)
+    .filter(([, v]) => v !== undefined && v !== '')
+    .map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`);
+  return p.length ? `?${p.join('&')}` : '';
+}
+export const reportApi = {
+  personnelUrl: (active?: boolean) => `/api/reports/personnel.csv${qs({ active })}`,
+  leavesUrl: (p: { from?: string; to?: string; status?: string } = {}) =>
+    `/api/reports/leaves.csv${qs(p)}`,
+  attendanceUrl: (p: { from?: string; to?: string } = {}) =>
+    `/api/reports/attendance.csv${qs(p)}`,
+  leaveBalancesUrl: (year?: number) => `/api/reports/leave-balances.csv${qs({ year })}`,
+};

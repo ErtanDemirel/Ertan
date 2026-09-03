@@ -68,6 +68,10 @@ export const notificationApi = {
   my: () => api.get<{ items: AppNotification[]; unread: number }>('/api/notifications/my').then((r) => r.data),
   read: (id: number) => api.post(`/api/notifications/${id}/read`).then((r) => r.data),
   readAll: () => api.post('/api/notifications/read-all').then((r) => r.data),
+  registerDevice: (token: string, platform?: string) =>
+    api.post('/api/notifications/register-device', { token, platform }).then((r) => r.data),
+  unregisterDevice: (token: string) =>
+    api.post('/api/notifications/unregister-device', { token }).then((r) => r.data),
 };
 
 export const announcementApi = {

@@ -20,6 +20,7 @@ import AttendancePage from './pages/Attendance';
 import PayrollPage from './pages/Payroll';
 import CandidatesPage from './pages/Candidates';
 import ServiceAnalyticsPage from './pages/ServiceAnalytics';
+import ReportsPage from './pages/Reports';
 import JobApplicationForm from './pages/JobApplicationForm';
 import SelfLayout from './pages/self/SelfLayout';
 import SelfLeave from './pages/self/SelfLeave';
@@ -72,6 +73,7 @@ export default function App() {
         <Route path="locations" element={<LocationsPage />} />
         <Route path="attendance" element={<AttendancePage />} />
         <Route path="holidays" element={<HolidaysPage />} />
+        <Route path="reports" element={<ReportsPage />} />
         <Route path="users" element={<UsersPage />} />
       </Route>
 

@@ -63,6 +63,9 @@ yönetim paneli ve Expo/React Native mobil uygulama.
 | **İş başvurusu + Aday yönetimi** | Kamuya açık başvuru formu (`/basvuru`), İK aday listesi/detayı; **TCKN ile geçmiş çalışan eşleştirmesi** (daha önce çalıştı mı, ne kadar, çıkış yaptı mı). |
 | **Servis analizi** | Vardiya bazlı: güzergah başına kişi sayısı, kapasiteye göre **gerekli servis sayısı**, **durak bazında** kişi dağılımı. |
 | **Güvenlik sertleştirmesi** | Hesap kilidi (brute-force), giriş uçlarında rate limiting, şifre politikası, güvenlik başlıkları, denetim kaydı (audit log), yapılandırılabilir CORS, güvenli dosya yükleme (tür/boyut doğrulama, webroot dışında saklama). |
+| **Anlık (push) bildirim** | Mobil cihazlar **Expo Push** ile bildirim alır (bordro hazır, izin/onay sonucu, onay bekleyen talep). Uygulama-içi bildirim oluştukça kullanıcının kayıtlı cihazlarına da push gönderilir. `Push:Provider` = `Expo` (varsayılan) / `None`. |
+| **Raporlar (CSV)** | Amir/Admin için **Excel'de açılan CSV** çıktıları: personel listesi, izin talepleri (yarım gün dahil, tarih/durum filtreli), mesai giriş/çıkış, yıllık izin bakiyeleri. Bordro gibi hassas veriler raporlara **dahil edilmez**. |
+| **Güvenli şema güncelleme** | `EnsureCreated` + idempotent `DbMaintenance` uyumlayıcı: mevcut veritabanı veri kaybı olmadan yeni kolon/tablo alır. Üretim için EF Core migration'a hazır (bkz. `database/migrations/`). |
 
 ### Eklediğim "olmazsa olmaz" güvenlik/işlevsellik
 
@@ -101,6 +104,16 @@ dotnet run
 
 **SMS sağlayıcısı**: Geliştirmede `Sms:Provider = "Console"` (OTP log'a yazılır).
 Üretimde `Netgsm` seçip `Sms` bölümünü doldurun (veya `NetgsmSmsSender`'ı kendi sağlayıcınıza uyarlayın).
+
+**Push bildirim**: Varsayılan `Push:Provider = "Expo"` (Expo Push servisi; ek altyapı gerektirmez).
+Push'u kapatmak için `Push:Provider = "None"`. Mobil uygulama girişte cihaz token'ını
+`POST /api/notifications/register-device` ile kaydeder; çıkışta kaydı kaldırır. Gerçek push için
+uygulamayı bir **EAS projesiyle** (development/production build) çalıştırın — Expo Go emülatörde token vermez.
+
+> **Şema güncelleme**: Model yeni kolon/tablo kazandığında, mevcut veritabanı açılışta
+> `DbMaintenance` uyumlayıcısıyla güvenli şekilde güncellenir (veri kaybı olmadan). Üretimde
+> EF migration önerilir: `Migrations/` klasörü oluşturunca uygulama otomatik `Migrate()` kullanır.
+> Ayrıntı: `database/migrations/README.md`.
 
 **Demo hesaplar**:
 

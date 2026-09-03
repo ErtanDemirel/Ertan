@@ -2,7 +2,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, CalendarClock, CalendarDays, Megaphone,
   UtensilsCrossed, Bus, MapPin, LogOut, ClipboardCheck, ShieldCheck,
-  Wallet, UserPlus, BarChart3, CalendarRange, Layers, CalendarX, KeyRound, GitBranch,
+  Wallet, UserPlus, BarChart3, CalendarRange, Layers, CalendarX, KeyRound, GitBranch, FileSpreadsheet,
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import NotificationBell from './NotificationBell';
@@ -32,6 +32,7 @@ const nav: NavItem[] = [
   { to: '/locations', label: 'Lokasyon & QR', icon: MapPin },
   { to: '/attendance', label: 'Mesai Kayıtları', icon: ClipboardCheck },
   { to: '/holidays', label: 'Resmî Tatiller', icon: CalendarX },
+  { to: '/reports', label: 'Raporlar', icon: FileSpreadsheet },
   { to: '/users', label: 'Kullanıcılar', icon: KeyRound, show: ({ isAdmin }) => isAdmin },
 ];
 
