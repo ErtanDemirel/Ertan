@@ -18,7 +18,8 @@ namespace Pdks.Api.Controllers;
 public class ContactController : ControllerBase
 {
     private readonly AppDbContext _db;
-    public ContactController(AppDbContext db) => _db = db;
+    private readonly NotificationService _notify;
+    public ContactController(AppDbContext db, NotificationService notify) { _db = db; _notify = notify; }
 
     /// <summary>Aktif kullanıcının güncel iletişim bilgisi + varsa bekleyen talebi.</summary>
     [HttpGet("me/contact")]
@@ -109,6 +110,13 @@ public class ContactController : ControllerBase
         item.HandlerComment = req.Comment;
         item.HandledByUserId = User.GetUserId();
         item.HandledAt = DateTime.UtcNow;
+
+        var targetUser = await _db.Users.FirstOrDefaultAsync(u => u.PersonnelId == item.PersonnelId, ct);
+        if (targetUser is not null)
+            await _notify.NotifyAsync(targetUser, "İletişim bilgisi güncelleme",
+                req.Approve ? "Talebiniz onaylandı ve bilgileriniz güncellendi." : "Talebiniz reddedildi.",
+                "contact", inApp: true, sms: false, ct);
+
         await _db.SaveChangesAsync(ct);
         return Ok(Map(item));
     }

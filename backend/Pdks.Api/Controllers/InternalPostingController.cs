@@ -17,7 +17,8 @@ namespace Pdks.Api.Controllers;
 public class InternalPostingController : ControllerBase
 {
     private readonly AppDbContext _db;
-    public InternalPostingController(AppDbContext db) => _db = db;
+    private readonly NotificationService _notify;
+    public InternalPostingController(AppDbContext db, NotificationService notify) { _db = db; _notify = notify; }
 
     // ---------- İlanlar ----------
     /// <summary>Açık ilanlar (personel için başvuru durumu ile). all=true ise pasifler de gelir (yönetici).</summary>
@@ -137,6 +138,23 @@ public class InternalPostingController : ControllerBase
         app.HandlerComment = req.Comment;
         app.HandledByUserId = User.GetUserId();
         app.HandledAt = DateTime.UtcNow;
+
+        var targetUser = await _db.Users.FirstOrDefaultAsync(u => u.PersonnelId == app.PersonnelId, ct);
+        if (targetUser is not null)
+        {
+            var label = st switch
+            {
+                ApplicationStatus.Interview => "görüşmeye çağrıldınız",
+                ApplicationStatus.Offered => "teklif aşamasına geçti",
+                ApplicationStatus.Hired => "kabul edildi",
+                ApplicationStatus.Rejected => "olumsuz sonuçlandı",
+                ApplicationStatus.Reviewing => "inceleniyor",
+                _ => "güncellendi"
+            };
+            await _notify.NotifyAsync(targetUser, "İç ilan başvurusu",
+                $"“{app.Posting?.Title}” başvurunuz: {label}.", "posting", inApp: true, sms: false, ct);
+        }
+
         await _db.SaveChangesAsync(ct);
         return Ok(Map(app));
     }

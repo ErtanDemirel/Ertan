@@ -18,7 +18,8 @@ namespace Pdks.Api.Controllers;
 public class FeedbackController : ControllerBase
 {
     private readonly AppDbContext _db;
-    public FeedbackController(AppDbContext db) => _db = db;
+    private readonly NotificationService _notify;
+    public FeedbackController(AppDbContext db, NotificationService notify) { _db = db; _notify = notify; }
 
     /// <summary>Yeni çalışan sesi kaydı oluşturur.</summary>
     [HttpPost]
@@ -86,6 +87,17 @@ public class FeedbackController : ControllerBase
         item.HandlerComment = req.Comment;
         item.HandledByUserId = User.GetUserId();
         item.HandledAt = DateTime.UtcNow;
+
+        // Anonim değilse ve durum sonuçlandıysa göndereni bilgilendir
+        if (!item.IsAnonymous && item.PersonnelId is not null && (st == FeedbackStatus.Resolved || st == FeedbackStatus.Reviewing))
+        {
+            var targetUser = await _db.Users.FirstOrDefaultAsync(u => u.PersonnelId == item.PersonnelId, ct);
+            if (targetUser is not null)
+                await _notify.NotifyAsync(targetUser, "Çalışan Sesi",
+                    st == FeedbackStatus.Resolved ? "Geri bildiriminiz çözüldü olarak işaretlendi." : "Geri bildiriminiz inceleniyor.",
+                    "feedback", inApp: true, sms: false, ct);
+        }
+
         await _db.SaveChangesAsync(ct);
         return Ok(Map(item, item.Personnel));
     }
