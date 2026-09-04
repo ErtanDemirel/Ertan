@@ -58,6 +58,17 @@ public class InternalPostingController : ControllerBase
         };
         _db.InternalPostings.Add(p);
         await _db.SaveChangesAsync(ct);
+
+        // Yeni ilan açılınca tüm personele toplu bildirim
+        if (p.IsActive)
+        {
+            var userIds = await _db.Users.Where(u => u.IsActive && u.PersonnelId != null)
+                .Select(u => u.Id).ToListAsync(ct);
+            await _notify.NotifyManyAsync(userIds, "Yeni iç ilan",
+                $"“{p.Title}” pozisyonu için başvurular açıldı.", "posting", ct);
+            await _db.SaveChangesAsync(ct);
+        }
+
         return Ok(new InternalPostingDto(p.Id, p.Title, p.Description, p.Department, p.Location,
             p.PositionCount, p.Deadline, p.IsActive, p.CreatedAt, 0, false, null));
     }

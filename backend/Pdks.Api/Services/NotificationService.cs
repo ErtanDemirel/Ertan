@@ -54,4 +54,27 @@ public class NotificationService
             catch (Exception ex) { _log.LogError(ex, "Bildirim SMS'i gönderilemedi ({User})", user.Id); }
         }
     }
+
+    /// <summary>
+    /// Çok sayıda kullanıcıya tek seferde bildirim: her biri için uygulama-içi kayıt ekler
+    /// ve TÜM cihazlara tek push çağrısıyla gönderir (toplu duyuru için verimli). SaveChanges çağırmaz.
+    /// </summary>
+    public async Task NotifyManyAsync(IReadOnlyCollection<int> userIds, string title, string body, string type,
+        CancellationToken ct = default)
+    {
+        if (userIds.Count == 0) return;
+        foreach (var uid in userIds)
+            _db.Notifications.Add(new Notification { UserId = uid, Title = title, Body = body, Type = type });
+
+        try
+        {
+            var tokens = await _db.PushTokens.AsNoTracking()
+                .Where(t => userIds.Contains(t.UserId) && t.IsActive)
+                .Select(t => t.Token)
+                .ToListAsync(ct);
+            if (tokens.Count > 0)
+                await _push.SendAsync(tokens, title, body, type, ct);
+        }
+        catch (Exception ex) { _log.LogError(ex, "Toplu push bildirimi gönderilemedi ({Count} kişi)", userIds.Count); }
+    }
 }

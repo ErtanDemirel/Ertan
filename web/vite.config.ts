@@ -13,4 +13,18 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    // Satıcı (vendor) kütüphanelerini ayrı parçalara böl → daha küçük ana paket,
+    // tarayıcı önbelleği daha iyi çalışır, "500 kB" uyarısı ortadan kalkar.
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'data-vendor': ['@tanstack/react-query', 'axios'],
+          'ui-vendor': ['lucide-react', 'qrcode.react'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 700,
+  },
 });

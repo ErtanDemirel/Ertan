@@ -19,7 +19,9 @@ public class TrainingController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly FileStorageService _files;
-    public TrainingController(AppDbContext db, FileStorageService files) { _db = db; _files = files; }
+    private readonly NotificationService _notify;
+    public TrainingController(AppDbContext db, FileStorageService files, NotificationService notify)
+    { _db = db; _files = files; _notify = notify; }
 
     // ---------- Yükleme (İK/İSG) ----------
     [HttpPost]
@@ -49,6 +51,17 @@ public class TrainingController : ControllerBase
             };
             _db.Trainings.Add(t);
             await _db.SaveChangesAsync(ct);
+
+            // Zorunlu eğitimde tüm personele toplu bildirim
+            if (t.IsMandatory)
+            {
+                var userIds = await _db.Users.Where(u => u.IsActive && u.PersonnelId != null)
+                    .Select(u => u.Id).ToListAsync(ct);
+                await _notify.NotifyManyAsync(userIds, "Yeni zorunlu eğitim",
+                    $"“{t.Title}” eğitimini izlemeniz gerekiyor.", "training", ct);
+                await _db.SaveChangesAsync(ct);
+            }
+
             return Ok(await AdminDtoAsync(t, ct));
         }
         catch (InvalidOperationException ex)

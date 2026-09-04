@@ -41,3 +41,7 @@ Thumbs.db
 
 # TS build info
 *.tsbuildinfo
+
+# tsc -b ile vite.config.ts dosyasından üretilenler (izlenmez)
+web/vite.config.js
+web/vite.config.d.ts

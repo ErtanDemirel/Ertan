@@ -176,6 +176,18 @@ npx expo start
 
 ---
 
+## Test ve CI
+
+- **Otomatik testler**: `backend/Pdks.Tests` (xUnit) — TC Kimlik No doğrulama/çıkarma
+  (checksum + bitişik blok), izin iş günü hesabı, CSV üretimi.
+  ```bash
+  dotnet test backend/Pdks.sln
+  ```
+- **CI** (`.github/workflows/ci.yml`): her push/PR'da 3 iş paralel çalışır —
+  backend (derle + test), web (`npm run build`), mobil (`tsc --noEmit`).
+
+---
+
 ## Güvenlik Notları (üretim öncesi)
 
 - `Jwt:Key` değerini güçlü, gizli bir anahtarla değiştirin (env / secret manager).

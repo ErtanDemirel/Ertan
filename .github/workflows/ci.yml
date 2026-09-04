@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master, "claude/**" ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  backend:
+    name: Backend (build + test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Restore
+        run: dotnet restore backend/Pdks.sln
+      - name: Build
+        run: dotnet build backend/Pdks.sln --no-restore -c Release
+      - name: Test
+        run: dotnet test backend/Pdks.sln --no-build -c Release --verbosity normal
+
+  web:
+    name: Web (typecheck + build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install
+        run: npm ci
+        working-directory: web
+      - name: Build (tsc + vite)
+        run: npm run build
+        working-directory: web
+
+  mobile:
+    name: Mobile (typecheck)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - name: Install
+        run: npm ci
+        working-directory: mobile
+      - name: Typecheck
+        run: npx tsc --noEmit
+        working-directory: mobile
