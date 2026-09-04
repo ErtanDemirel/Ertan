@@ -222,7 +222,9 @@ public class PayrollController : ControllerBase
         return NoContent();
     }
 
-    private IActionResult Deny() =>
+    // ActionResult döner: hem IActionResult dönen metotlarda hem de ActionResult<T> dönen
+    // metotlarda kullanılabilir (ActionResult<T>, IActionResult'tan implicit dönüşmez).
+    private ActionResult Deny() =>
         StatusCode(StatusCodes.Status403Forbidden, new { message = "Bu işlem için bordro dağıtım yetkiniz yok." });
 
     private string? Ip() => HttpContext.Connection.RemoteIpAddress?.ToString();

@@ -1,3 +1,4 @@
+using DocumentFormat.OpenXml; // SpaceProcessingModeValues
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Pdks.Api.Entities;
